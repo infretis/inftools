@@ -391,15 +391,23 @@ def smoothen_pcross(x, p):
     return x_out, 10**np.mean(p_out, axis=0)
 
 def estimate_interface_positions(x, p, pL):
-    """Place new interfaces on Pcross such that the local crossing is pL."""
+    """Place new interfaces based on Pcross.
+
+    The interfaces are placed *evenly* such that the local crossing probability
+    is at *least* pL, meaning it is a bit higher than pL most of the time.
+    """
     i = 0
     interfaces = [0]
-    while True:
-        idx = np.where(p/p[i] > pL)[0]
+    n_intf = int(np.log(p[-1])/np.log(pL)) + 1
+    pL_new = p[-1]**(1/n_intf)
+    for intf in range(n_intf):
+        idx = np.where(p/p[i] >= pL_new)[0]
         if len(idx) == len(p):
             break
         i = idx[-1]
-        # when we drop more than pL**2
+        if p[-1]/p[i] > pL_new:
+            break
+        # when we drop more than pL**2 (but not more than pL**3)
         if i in interfaces:
             i = i+1
         interfaces.append(i)

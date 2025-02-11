@@ -12,6 +12,10 @@ def estimate_interfaces2(
     """
     Estimate the interface positions from Pcross.txt by linearizing the curve.
 
+    TODO:
+        * how to handle large drops in the curve? e.g. more than pL?
+        * when we have little data, the curve will be very blocky
+
     """
     import numpy as np
     from inftools.misc.infinit_helper import (
@@ -38,17 +42,18 @@ def estimate_interfaces2(
     if ploc is not None and num is None:
         interfaces = estimate_interface_positions(x, p, ploc)
         interfaces = list(interfaces) + [iN]
-        print(f"[INFO] Added {len(interfaces)} interfaces")
 
     elif num is not None and ploc is None:
-        ploc = np.exp(np.log(p[-1]) / (num - 1))  # local crossing probability
-        print(f"[INFO] ploc = {ploc}")
+        ploc = np.exp(np.log(p[-1]) / (num - 1)) - 1e-6
         interfaces = estimate_interface_positions(x, p, ploc)
         interfaces = list(interfaces) + [iN]
-        print(f"[INFO] Added {len(interfaces)} interfaces")
 
     else:
-        raise ValueError("Cant have both -num and -ploc set!")
+        raise ValueError("Cant have both (or none) of -num and -ploc set!")
+
+    ploc = np.exp(np.log(p[-1]) / (len(interfaces) - 1))
+    print(f"[INFO] There are now {len(interfaces)} interfaces.")
+    print(f"[INFO] Calculated local crossing probability = {ploc}")
 
     print("interfaces = [", ", ".join([f"{itf:.6f}" for itf in interfaces]) + "]")
 
