@@ -209,6 +209,7 @@ def infinit(
         log.log("Generating zero paths ...")
         init_conf = pl.Path(iset["initial_conf"]).resolve()
         max_op = generate_zero_paths(str(init_conf), toml = toml)
+        iset["max_op"] = max_op
         log.log(f"Done with zero paths! Max op: {max_op}\n")
         iset["cstep"] = 0
         # for placing interfaces if we start with more than 1 worker
@@ -216,10 +217,13 @@ def infinit(
         d_lambda = max_op - intf[0]
         nworkers = config["runner"]["workers"]
         lamres0 = 0.5*(d_lambda)/nworkers
-        if iset["lamres"] > lamres0:
-            print(f"Lamres too large. Setting lamres to {lamres0}.")
-            iset["lamres"] = lamres0
-            iset["max_op"] = max_op
+        # just divide by 2 until lamres checks out, then each intf remains
+        #on the bin positions
+        if nworkers>1:
+            while iset["lamres"]> lamres0:
+                iset["lamres"]/=2
+        if lamres0 != iset["lamres"]:
+            print(f"Lamres too large. Setting lamres to {iset['lamres']}.")
 
         # new interfaces to use for first infretis sim
         intf = [intf[0]] + [intf[0]+2*lamres0*(i+1) for i in range(nworkers-1)] + [intf[1]]

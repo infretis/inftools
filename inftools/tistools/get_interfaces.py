@@ -44,16 +44,20 @@ def estimate_interfaces2(
     p0 = x[:, 1]
 
     # trim endpoints if i0 or iN given
-    iN = x0[-1] if iN is None else iN
-    i0 = x0[0] if i0 is None else i0
-    last_idx = np.where(x0 <= iN)[0][-1]
-    first_idx = np.where(x0 >= i0)[0][0]
+    last_idx = np.where(x0 <= iN)[0][-1] if iN is not None else len(x0)
+    first_idx = np.where(x0 >= i0)[0][0] if i0 is not None else 0
+    if iN is None:
+        iN = x0[-1]
+    if i0 is None:
+        i0 = x[0]
+
     x = x0[first_idx:last_idx]
     p = p0[first_idx:last_idx]
     p = p / p[0]
 
     # linearalize the curve
     x, p = smoothen_pcross(x, p)
+
     if ploc is not None and num is None:
         interfaces = estimate_interface_positions(x, p, ploc)
         interfaces = list(interfaces) + [iN]
