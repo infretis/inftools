@@ -45,6 +45,10 @@ def set_default_infinit(config):
 
     config["infinit"]["cstep"] = cstep
     assert cstep < len(steps_per_iter), "Nothing to do"
+    if not np.all(np.array(steps_per_iter[max(cstep,0):])
+            >= config["runner"]["workers"]):
+        raise ValueError("The number of infretis steps in steps_per_iter"
+                " has to be larger or equal to the number of workers!")
     assert config["output"]["delete_old"] == False
     assert config["output"].get("delete_old_all", False) == False
     # update check here based on maximum op value
