@@ -125,7 +125,6 @@ def generate_zero_paths(
     # make load directories
     pathsf = [path0, path1]
     pathsr = [path0r, path1r]
-    max_op = -np.inf
     for i in range(2):
         dirname = load_dir / str(i)
         accepted = dirname / "accepted"
@@ -137,9 +136,9 @@ def generate_zero_paths(
         path = paste_paths(pathsr[i], pathsf[i])
         # save order paramter
         order = np.array([pp.order for pp in path.phasepoints])
-        max_order = np.max(order[:,0])
-        if max_order > max_op:
-            max_op = max_order
+        # return max op of [0+] path
+        if i == 1:
+            max_op = np.max(order[:,0])
         order = np.hstack((np.arange(len(order)).reshape(-1,1), np.array(order)))
         fmt = ["%d"] + ["%12.6f" for i in range(order.shape[1]-1)]
         np.savetxt(str(orderfile), order, fmt=fmt)
