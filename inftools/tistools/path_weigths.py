@@ -7,9 +7,10 @@ def get_path_weights(
         out: Annotated[str, typer.Option("-out", help = "Output .txt of the path weights")] = "path_weights.txt",
         nskip: Annotated[int, typer.Option("-nskip", help = "Skip the first nskip entries of the infretis_data.txt file")] = 0
         ):
-    """Calculate the unbiased weight for each path in the plus ensembles.
+    """Work in progress: Calculate the unbiased weight for paths in the plus ensembles.
 
-    Can be used to calculate observables as <O> = sum(wi*Oi).
+    Can be used to calculate observables as <O> = sum(wi*Oi) or for predictive power.
+    Note: The weights may be off, as this is still WIP.
     """
     import numpy as np
     import tomli
