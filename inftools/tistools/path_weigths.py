@@ -5,7 +5,8 @@ def get_path_weights(
         toml: Annotated[str, typer.Option("-toml", help = "The .toml file")] = "infretis.toml",
         data: Annotated[str, typer.Option("-data", help = "The infretis_data.txt file")] = "infretis_data.txt",
         out: Annotated[str, typer.Option("-out", help = "Output .txt of the path weights")] = "path_weights.txt",
-        nskip: Annotated[int, typer.Option("-nskip", help = "Skip the first nskip entries of the infretis_data.txt file")] = 0
+        nskip: Annotated[int, typer.Option("-nskip", help = "Skip the first nskip entries of the infretis_data.txt file")] = 0,
+        plot: Annotated[bool, typer.Option("-plotP", help="If true plot the binless crossing probability")] = False,
         ):
     """Work in progress: Calculate the unbiased weight for paths in the plus ensembles.
 
@@ -40,6 +41,9 @@ def get_path_weights(
 
     w = D["path_f"]/D["path_w"]
     w[np.isnan(w)]=0
+    # Need to scale w such that sum equals the number of (fractional) samples n
+    # where n=sum(D['path_f'],axis=0)
+    w = w/np.sum(w, axis=0)*np.sum(D["path_f"],axis=0)
 
     ploc_unscaled = np.zeros(len(interfaces))
     ploc_wham = np.zeros_like(ploc_unscaled)
@@ -54,6 +58,7 @@ def get_path_weights(
         ploc_unscaled[i+1] = njl[i]/nj[i]
         ploc_wham[i+1] = np.sum(njl)/np.sum(nj/ploc_wham[:i+1])
 
+    # the unbiased path weights
     A = np.zeros_like(D["maxop"])
     Q = 1/np.cumsum(nj/ploc_wham[:-1])
 
@@ -66,3 +71,21 @@ def get_path_weights(
     np.savetxt(out, np.c_[D["pnr"],D["maxop"],A],
             header="path_nr\tmax_op\tweight",
             fmt=["%8d","%8.4f", "%16.8e"])
+
+    # plot the binless crossing probability
+    if plot:
+        import matplotlib.pyplot as plt
+        idx = np.argsort(D["maxop"].flatten())
+        maxop_sorted = D["maxop"][idx].flatten()
+        weight_sorted = A[idx].flatten()
+        sumw = np.sum(weight_sorted)
+        res_y = [1.0]
+        res_x = [interfaces[0]]
+        for i,moi in enumerate(maxop_sorted):
+            res_y.append(np.sum(weight_sorted[i:])/sumw)
+            res_x.append(moi)
+        plt.plot(res_x, res_y)
+        plt.yscale("log")
+        for intf in interfaces:
+            plt.axvline(intf,c="k")
+        plt.show()
