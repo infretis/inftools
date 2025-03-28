@@ -77,6 +77,8 @@ def run_infretis_ext(steps):
     if c1 and c0["infinit"]["cstep"] == c1["infinit"]["cstep"] and len(c0["simulation"]["interfaces"])==len(c1["simulation"]["interfaces"]) and np.allclose(c0["simulation"]["interfaces"],c1["simulation"]["interfaces"]):
         print("Running with restart.toml")
         c1["simulation"]["steps"] = steps
+        # might have updated steps_per_iter
+        c1["infinit"]["steps_per_iter"] = c0["infinit"]["steps_per_iter"]
         write_toml(c1, "restart.toml")
         subprocess.run("infretisrun -i restart.toml", shell = True)
     else:
