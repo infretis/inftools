@@ -8,10 +8,9 @@ def get_path_weights(
         nskip: Annotated[int, typer.Option("-nskip", help = "Skip the first nskip entries of the infretis_data.txt file")] = 0,
         plot: Annotated[bool, typer.Option("-plotP", help="If true plot the binless crossing probability")] = False,
         ):
-    """Work in progress: Calculate the unbiased weight for paths in the plus ensembles.
+    """Calculate the unbiased weight for paths in the plus ensembles.
 
     Can be used to calculate observables as <O> = sum(wi*Oi) or for predictive power.
-    Note: The weights may be off, as this is still WIP.
     """
     import numpy as np
     import tomli
