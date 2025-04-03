@@ -66,16 +66,25 @@ def calc_flow2(
                 flow_map[replica]["step"].append(step)
 
 
-    pn_numbs = []
-    if plot != "":
-        for ens in range(n_ensembles):
+    if len(plot) > 0:
+        pn_numbs = []
+        for idx, ens in enumerate([int(i) for i in plot.split(" ")]):
+            # for ens in range(n_ensembles):
             s1 = len(set(pn_numbs))
             s2 = len(set(flow_map[ens]["path"]))
             s3 = len(set(pn_numbs + flow_map[ens]["path"]))
             assert s1 + s2 == s3
+            # color = '#808080' if ens != 15 else "C0"
+            # zorder = 1 if ens != 15 else 2
+            # alpha=1
 
-            plt.plot(flow_map[ens]["step"], flow_map[ens]["ens"], marker = "o", markersize = 5)
-            plt.title(f"replica {ens:03.0f}")
-            plt.show()
+            plt.plot(flow_map[ens]["step"], flow_map[ens]["ens"], marker = "o", markersize = 5, color=COLS[idx%8], label=f"Replica {ens}")
+            # plt.plot(flow_map[ens]["step"], flow_map[ens]["ens"], marker = "o", markersize = 5, color=color, zorder=zorder, label=f"Replica {ens}")
+            plt.xlabel(f"MC steps")
+            plt.ylabel(f"Ensemble")
+            plt.legend()
+            # plt.title(f"replica {ens:03.0f}")
+        # plt.show()
+    plt.savefig("flow0.pdf")
 
     return flow_map
