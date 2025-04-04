@@ -8,6 +8,12 @@ def calc_flow_op(
     log: Annotated[str, typer.Option("-log", help="The .log file to read path numbers")] = "sim.log",
     load: Annotated[str, typer.Option("-load", help="The trajectory load folder containing order.txt")] = "load",
     ):
+    """
+	Plots the order.txt for a single replica as it visits different ensembles.
+
+    The x axis becomes the total number of subcycles propagated for the replica.
+    (if we ignore the rejected moves.)
+    """
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -22,6 +28,7 @@ def calc_flow_op(
     xacc = 0
     for idx, path in enumerate(flow_map[rep]["path"][1:]):
         ens = flow_map[rep]["ens"][1:][idx]
+        print(load + f"/{path}/order.txt")
         data = np.loadtxt(load + f"/{path}/order.txt")
         plt.plot(data[:, 0] + xacc, data[:, 1], color=f"C{ens%8}")
         xacc += len(data[:, 0])

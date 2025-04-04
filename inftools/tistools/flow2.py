@@ -9,6 +9,11 @@ def calc_flow2(
     toml: Annotated[str, typer.Option("-toml", help="The .toml input file defining the orderparameter")] = "infretis.toml",
     log: Annotated[str, typer.Option("-log", help="The .log file to read path numbers")] = "sim.log",
     ):
+    """
+   	Calculates and plots the flow of individual replica across ensembles.
+
+    Returns a flow_map dictionary.
+    """
     import numpy as np
     import tomli
     import matplotlib.pyplot as plt
@@ -76,6 +81,7 @@ def calc_flow2(
             s2 = len(set(flow_map[ens]["path"]))
             s3 = len(set(pn_numbs + flow_map[ens]["path"]))
             assert s1 + s2 == s3
+            print(len(flow_map[ens]["path"]))
 
             plt.plot(flow_map[ens]["step"], flow_map[ens]["ens"], marker = "o", markersize = 5, color=f"C{idx%8}", label=f"Replica {ens}")
             plt.xlabel(f"MC steps")
