@@ -10,7 +10,7 @@ def calc_flow2(
     log: Annotated[str, typer.Option("-log", help="The .log file to read path numbers")] = "sim.log",
     ):
     """
-   	Calculates and plots the flow of individual replica across ensembles.
+    Calculates and plots the flow of individual replica across ensembles.
 
     Returns a flow_map dictionary.
     """

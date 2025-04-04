@@ -9,7 +9,7 @@ def calc_flow_op(
     load: Annotated[str, typer.Option("-load", help="The trajectory load folder containing order.txt")] = "load",
     ):
     """
-	Plots the order.txt for a single replica as it visits different ensembles.
+    Plots the order.txt for a single replica as it visits different ensembles.
 
     The x axis becomes the total number of subcycles propagated for the replica.
     (if we ignore the rejected moves.)
