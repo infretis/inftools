@@ -41,9 +41,9 @@ def plot_ufree_2d(
     k_ratio = rates[0] / rates[1]
     c = (hints[0] / hints[1]) * k_ratio
 
-    # calcuate reweighted hist_rw
+    # calcuate reweighted frees_rw
     frees = [-np.log(hists[0]), -np.log(hists[1] * c)]
-    hist_rw = np.zeros(hists[0].shape)
+    frees_rw = np.zeros(hists[0].shape)
     for idx_x, x in enumerate(xval):
         for idx_y, y in enumerate(xval):
             # get the x,y values of the frees in a list
@@ -53,13 +53,13 @@ def plot_ufree_2d(
             inf = free_vals == np.inf
             not_inf = np.logical_not(inf)
             if np.all(inf):
-                hist_rw[idx_x, idx_y] = np.inf
+                frees_rw[idx_x, idx_y] = np.inf
             else:
-                hist_list = free_vals[not_inf == 1]
-                exp_list = -np.log(np.sum([np.exp(-i) for i in hist_list]))
-                hist_rw[idx_x, idx_y] = exp_list
+                free_list = free_vals[not_inf == 1]
+                exp_list = -np.log(np.sum([np.exp(-i) for i in free_list]))
+                frees_rw[idx_x, idx_y] = exp_list
 
-    bar = plt.pcolormesh(yval, xval, hist_rw, rasterized=True) #, cmap="magma"
+    bar = plt.pcolormesh(yval, xval, frees_rw, rasterized=True) #, cmap="magma"
     if len(out) > 0:
         plt.savefig(out)
 
