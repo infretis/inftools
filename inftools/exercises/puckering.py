@@ -157,7 +157,7 @@ def initial_path_from_iretis(
     for traj in trajs[::-1]:
         x = np.loadtxt(f"{traj}/order.txt", usecols=[0, 1])
         # zero minus
-        if x[0, 1] > interfaces[0]:
+        if x[1, 1] < interfaces[0]:
             if 0 not in out.keys():
                 out[0] = traj
 
