@@ -10,9 +10,11 @@ import os
 import shutil
 import subprocess
 from types import SimpleNamespace
+import pathlib
 
 import numpy as np
 import tomli
+import tomli_w
 from infretis.classes.orderparameter import Puckering
 
 
@@ -137,27 +139,149 @@ def generate_openff_topology(
                 writefile.write(line)
 
 def initial_path_from_iretis(
-    traj: Annotated[str, typer.Option("-traj", help="The path to the folder containing the trajectories (e.g. ../iretis0/trajs/)")],
-    toml: Annotated[str, typer.Option("-toml", help="The .toml input file for reading the interfaces (e.g. 'infretis.toml')")],
-        ):
-    "Generate initial paths for an infretis simulation using paths from an earlier infretis simulation"
+    traj: Annotated[str, typer.Option("-traj", help="The path to the trajectory folder (e.g. run0/)")],
+    toml: Annotated[str, typer.Option("-toml", help="The .toml input file for reading interfaces")],
+    out_dir: Annotated[str, typer.Option("-out_dir", help="The out directory containing the new paths")] = "load",
+    restart: Annotated[str, typer.Option("-restart", help=".toml to restart file for reading last active paths")] = "",
+    out_toml: Annotated[str, typer.Option("-out_toml", help="Output file if interfaces and shooting_moves are chagned")] = "",
+    keep_all_active: Annotated[bool, typer.Option(help = "If active paths are no longer valid, add new interfaces")] = False,
+    ):
+    """Pick out initial paths from an earlier infretis simulation.
+
+    It is assumed that the paths present in the '-traj' folder where generated
+    with identical interfaces[0] as specified in the '-toml' file.
+
+    If a restart.toml file is supplied with '-restart', the last active paths
+    from the previous simulation can be used. If some of these are not valid
+    with the new interfaces, additional interfaces can be added to accommodate
+    these paths by giving invoking the '--keep_all_active' flag. The active
+    paths are valuable, since they are the most decorrelated paths from the
+    initial paths and discarding them is wasteful. If '--rename_toml' is given,
+    this will copy the .toml file to a new file, and change the interfaces of the
+    '-toml' file. It will also add as many more 'wf' moves to the shooting_moves
+    as required.
+
+    TODO: Ideally, to save space, we should simply move them instead of copying.
+    Howver, that requires us to use symlinks because if we move one path that
+    is going to be used again (cloned), then we have to point to that path.
+    """
+    out_dir = pathlib.Path(out_dir)
+    trajdir = pathlib.Path(traj)
+    toml = pathlib.Path(toml)
+    if out_toml:
+        out_toml = pathlib.Path(out_toml)
+
+    if not trajdir.exists():
+        raise ValueError(f"{trajdir} does not exist.")
+    if not trajdir.is_dir():
+        raise ValueError(f"{trajdir} is not a directory.")
+    if out_dir.exists():
+        raise ValueError(
+            f"Directory {out_dir.resolve()} exists. Will not overwrite. "
+            "Rename or delete it manually. Aborting."
+        )
+    else:
+        os.mkdir(out_dir)
 
     # read interfaces from .toml file
     with open(toml, "rb") as toml_file:
         toml_dict = tomli.load(toml_file)
-    interfaces = toml_dict["simulation"]["interfaces"][:-1]
 
-    out = {}  # ensemble - traj_idx
+    if restart:
+        with open(restart, "rb") as toml_file:
+            restart_dict = tomli.load(toml_file)
 
-    trajs = glob.glob(f"{traj}/*")  # folder to trajectories
-    np.argsort([int(f.split("/")[-1]) for f in trajs])
-    trajs = sorted(trajs, key=os.path.getctime)
+    interfaces = toml_dict["simulation"]["interfaces"]
+    last_interface = interfaces.pop(-1)
+    sh_m = toml_dict["simulation"]["shooting_moves"]
+    trajs = [pathlib.Path(pi) for pi in glob.glob(f"{trajdir}/*")]  # folder to trajectories
 
-    # iterate backwards to get decorrelated paths
-    for traj in trajs[::-1]:
-        x = np.loadtxt(f"{traj}/order.txt", usecols=[0, 1])
-        # zero minus
-        if x[0, 1] > interfaces[0]:
+    # try to read active paths
+    if restart and restart_dict.get("current", False):
+        active_paths = restart_dict["current"].get("active", False)
+        if not active_paths:
+            print(f"* {restart} has 'current' section but no 'active' section.")
+        else:
+            active_paths = [trajdir / str(ap) for ap in active_paths]
+            print("* Active paths found. Trying to use previous active paths.")
+
+    out = {}  # ensemble:traj_idx in load folder
+
+    if restart and active_paths:
+        # pick out active [0-] paths, assumes we always have a zero minus in actives
+        out[0] = active_paths[0]
+
+        # first load order.txt and sort active paths with increasing maxop
+        omax_active_paths = []
+        for traj in active_paths:
+            order_file = traj / "order.txt"
+            # ensure we are reading an actual path directory
+            if not order_file.exists():
+                print(f"* Did not find {order_file.resolve()}")
+                continue
+            x = np.loadtxt(order_file, usecols=[0, 1])
+            omax = np.max(x[:, 1])
+            omax_active_paths.append(omax)
+
+        # sort wrt to increasing maxop, but exclude [0-] path
+        sorted_op_idx = np.argsort(omax_active_paths[1:])
+        omax_active_paths = [omax_active_paths[0]] + [omax_active_paths[i+1] for i in sorted_op_idx]
+        active_paths = [active_paths[0]] + [active_paths[i+1] for i in sorted_op_idx]
+        # put the paths (sorted wrt max op) in increasing ensembles
+        # and add new interfaces if neccessary
+        for traj, omax in zip(active_paths[1:], omax_active_paths[1:]):
+            is_valid_path = False
+            valid_in = 0
+            for i, interface in enumerate(interfaces):
+                if omax > interface:
+                    # valid_in = 1 correspsonds to ensemble [0+]
+                    valid_in = i + 1
+                if valid_in not in out.keys():
+                    # stop on first valid path for each ensemble
+                    is_valid_path = True
+                    out[valid_in] = traj
+                    break
+            print(i, traj, valid_in, is_valid_path)
+            if not is_valid_path:
+                print(f"* Previous active path {traj} is not valid with the"
+                " new interfaces")
+                if keep_all_active:
+                    # if a path is not valid, e.g. in [i+], (i > 0) add a new
+                    #interface halfway between interfaces[i-1] and omax
+                    new_intf = (omax - interfaces[valid_in-1])/2
+                    print(f"* keep_all_active flag set. Adding a new interface"
+                    f" at {new_intf}")
+                    out[valid_in+1] = traj
+                    interfaces = interfaces[:valid_in] + [new_intf] + interfaces[valid_in:]
+                    if sh_m[valid_in] == "sh":
+                        # sh sh wf should not be sh wf sh wf
+                        sh_m = sh_m + ["wf"]
+                    else:
+                        sh_m = sh_m[:valid_in] + ["wf"] + sh_m[valid_in:]
+
+    if out_toml and keep_all_active:
+        if out_toml.resolve() == toml.resolve():
+            print(f"* {toml} and {out_toml} are the same file.")
+            new_toml_name = toml.resolve().parent / "old_infretis.toml"
+            toml.rename(new_toml_name)
+            print(f"* Renamed {toml} to {new_toml_name}")
+
+        toml_dict["simulation"]["interfaces"] = interfaces + [last_interface]
+        toml_dict["simulation"]["shooting_moves"] = sh_m
+        with open(out_toml, "wb") as wfile:
+            tomli_w.dump(toml_dict, wfile)
+            print(f"* Modified interfaces of {out_toml}")
+
+    # Now clone paths to fill up the remaining ensembles
+    np.random.shuffle(trajs) # We pick paths by random
+    for traj in trajs:
+        order_file = traj / "order.txt"
+        if not order_file.exists():
+            print(f"* Did not find {order_file.resolve()}")
+            continue
+        x = np.loadtxt(order_file, usecols=[0, 1])
+        # zero minus path (can include lambda_minus_one)
+        if x[1,1] < interfaces[0]:
             if 0 not in out.keys():
                 out[0] = traj
 
@@ -171,6 +295,7 @@ def initial_path_from_iretis(
             if valid_in and valid_in not in out.keys():
                 out[valid_in] = traj
 
+
     # if we miss some lower ensembles, add to
     # them the paths from the higher ensembles
     for i in range(len(interfaces) + 1):
@@ -178,29 +303,22 @@ def initial_path_from_iretis(
             for j in range(i + 1, len(interfaces) + 1):
                 if j in out.keys():
                     out[i] = out[j]
-                    print(f"[INFO] Added path from ens{j} to ens{i}")
+                    print(f"* copied path from ens{j} to ens{i}")
 
 
     # Check if we have paths in all ensembles
+    print(len(interfaces)+1, interfaces, out)
     for i in range(len(interfaces) + 1):
         assert (
             i in out.keys()
-        ), f"Did not find any paths in ensemble {i}\
+        ), f"* Did not find any paths in ensemble {i}\
     that cross the corresponding interface"
 
-    loaddir = "load"
-    if os.path.exists(loaddir):
-        exit(
-            f"\nDirectory {loaddir}/ exists. Will not overwrite.\
-    \nRename or delete it manually. Aborting."
-        )
-    else:
-        os.mkdir(loaddir)
 
     for i, traj in zip(out.keys(), out.values()):
-        shutil.copytree(traj, f"{loaddir}/{i}")
+        shutil.copytree(traj, out_dir / str(i))
 
-    print("\nAll done! Created folder load/ with new initial paths.")
+    print(f"\nAll done! Created folder {out_dir} with new initial paths.")
 
 def initial_path_from_md(
         trr: Annotated[str, typer.Option("-trr", help="The .trr trajectory file")],
