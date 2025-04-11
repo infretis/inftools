@@ -52,6 +52,10 @@ def get_path_weights(
     # Need to scale w such that sum equals the number of (fractional) samples n
     # where n=sum(D['path_f'],axis=0)
     w = w / np.sum(w, axis=0) * np.sum(D["path_f"], axis=0)
+    wsum = np.sum(w, axis = 0)
+    print(wsum)
+    # Check if we can construct the crossing probability, if not we add
+    # "fake" paths to estimate it
 
     ploc_unscaled = np.zeros(len(interfaces))
     ploc_wham = np.zeros_like(ploc_unscaled)
@@ -59,8 +63,8 @@ def get_path_weights(
     ploc_wham[0] = 1.0
     for i, intf_p1 in enumerate(interfaces[1:]):
         h1 = D["maxop"] >= intf_p1
-        # nmr of paths crossing lambda_i for each ensemble
-        nj = np.sum(w[:, : i + 1], axis=0)
+        # nmr of paths crossing lambda_i for each ensemble up to i
+        nj = wsum[:i + 1]
         # nmr of paths crossing lambda_i+1 for each ensemble
         njl = np.sum(h1 * w[:, : i + 1], axis=0)
         ploc_unscaled[i + 1] = njl[i] / nj[i]
@@ -97,7 +101,8 @@ def get_path_weights(
             res_y.append(np.sum(weight_sorted[i:]) / sumw)
             res_x.append(moi)
         if outP:
-            np.savetxt(outP, np.c_[res_x, res_y])
+            pcross = np.c_[res_x, res_y]
+            np.savetxt(outP, pcross)
 
     if plotP:
         import matplotlib.pyplot as plt
@@ -107,3 +112,5 @@ def get_path_weights(
         for intf in interfaces:
             plt.axvline(intf, c="k")
         plt.show()
+    if outP:
+        return pcross

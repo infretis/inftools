@@ -150,20 +150,24 @@ def initial_path_from_iretis(
 
     It is assumed that the paths present in the '-traj' folder where generated
     with identical interfaces[0] as specified in the '-toml' file.
+    We assume shooting_moves = ['sh', 'sh', 'wf', ...,  'wf']
 
     If a restart.toml file is supplied with '-restart', the last active paths
     from the previous simulation can be used. If some of these are not valid
     with the new interfaces, additional interfaces can be added to accommodate
     these paths by giving invoking the '--keep_all_active' flag. The active
     paths are valuable, since they are the most decorrelated paths from the
-    initial paths and discarding them is wasteful. If '--rename_toml' is given,
-    this will copy the .toml file to a new file, and change the interfaces of the
-    '-toml' file. It will also add as many more 'wf' moves to the shooting_moves
-    as required.
+    initial paths and discarding them is wasteful. If '--keep_all_active' paths
+    is set, new interfaces may be added from the '-restart' .toml file in which
+    the active paths where valid. It will also add as many more 'wf' moves to
+    the shooting_moves as required.
 
-    TODO: Ideally, to save space, we should simply move them instead of copying.
-    Howver, that requires us to use symlinks because if we move one path that
-    is going to be used again (cloned), then we have to point to that path.
+    TODO:
+        * Ideally, to save space, we should simply move them instead of copying.
+        However, that requires us to use symlinks because if we move one path that
+        is going to be used again (cloned), then we have to point to that path.
+        * Check that selected paths are actually valid wf paths using infretis
+        functions
     """
     out_dir = pathlib.Path(out_dir)
     trajdir = pathlib.Path(traj)
@@ -192,7 +196,6 @@ def initial_path_from_iretis(
             restart_dict = tomli.load(toml_file)
 
     interfaces = toml_dict["simulation"]["interfaces"]
-    last_interface = interfaces.pop(-1)
     sh_m = toml_dict["simulation"]["shooting_moves"]
     trajs = [pathlib.Path(pi) for pi in glob.glob(f"{trajdir}/*")]  # folder to trajectories
 
@@ -208,12 +211,13 @@ def initial_path_from_iretis(
     out = {}  # ensemble:traj_idx in load folder
 
     if restart and active_paths:
-        # pick out active [0-] paths, assumes we always have a zero minus in actives
+        # pick active [0-] and [0+] paths, since interfaces[0] doesn't change
         out[0] = active_paths[0]
+        out[1] = active_paths[1]
 
-        # first load order.txt and sort active paths with increasing maxop
+        # first load order.txt to calculate maxop
         omax_active_paths = []
-        for traj in active_paths:
+        for traj in active_paths[2:]:
             order_file = traj / "order.txt"
             # ensure we are reading an actual path directory
             if not order_file.exists():
@@ -223,25 +227,27 @@ def initial_path_from_iretis(
             omax = np.max(x[:, 1])
             omax_active_paths.append(omax)
 
-        # sort wrt to increasing maxop, but exclude [0-] path
-        sorted_op_idx = np.argsort(omax_active_paths[1:])
-        omax_active_paths = [omax_active_paths[0]] + [omax_active_paths[i+1] for i in sorted_op_idx]
-        active_paths = [active_paths[0]] + [active_paths[i+1] for i in sorted_op_idx]
-        # put the paths (sorted wrt max op) in increasing ensembles
-        # and add new interfaces if neccessary
-        for traj, omax in zip(active_paths[1:], omax_active_paths[1:]):
+        # sort wrt to increasing maxop, but exclude [0-] and [0+] path
+        sorted_a_idx = np.argsort(omax_active_paths[2:])
+        # sorted active (sa) paths, but [0-] and [0+] stay in 0 and 1
+        sa_omax = omax_active_paths[:2] + [omax_active_paths[i+1] for i in sorted_a_idx]
+        sa_paths = active_paths[:2] + [active_paths[i+1] for i in sorted_a_idx]
+        # put the paths (sorted wrt max op) in increasing ensembles, add
+        # interfaces from restart if needed
+        for traj, omax in zip(sa_paths[2:], sa_omax):
             is_valid_path = False
             valid_in = 0
-            for i, interface in enumerate(interfaces):
+            for i, interface in enumerate(interfaces[1:-1]):
                 if omax > interface:
-                    # valid_in = 1 correspsonds to ensemble [0+]
-                    valid_in = i + 1
-                if valid_in not in out.keys():
-                    # stop on first valid path for each ensemble
-                    is_valid_path = True
-                    out[valid_in] = traj
+                    # valid_in = 2 correspsonds to ensemble [1+]
+                    valid_in = i + 2
+                else:
                     break
-            print(i, traj, valid_in, is_valid_path)
+            if valid_in not in out.keys():
+                # stop on first valid path for each ensemble
+                is_valid_path = True
+                out[valid_in] = traj
+                    break
             if not is_valid_path:
                 print(f"* Previous active path {traj} is not valid with the"
                 " new interfaces")

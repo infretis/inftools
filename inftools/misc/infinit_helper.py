@@ -97,11 +97,20 @@ def update_toml_interfaces(config):
     interfaces.
     """
     config1 = read_toml("restart.toml")
-    x, p = calc_pcross(
-            config1["output"]["data_file"],
-            config1["simulation"]["interfaces"],
-            config1["infinit"]["lamres"],
-            config1["infinit"]["nskip"])
+    # calculate binless crossing probability
+    x, p = get_path_weights(
+        toml = "restart.toml",
+        data = config1["output"]["data_file"],
+        nskip = int(config1["infinit"]["cstep"]*config1["infinit"]["nskip"]),
+        outP = "last_infretis_pcross.txt",
+        out = "last_infretis_path_weigths.txt",
+        overw = True,
+        )
+
+    # remove values greater than interfaces[-1] and p==0
+
+    # then interp with interp1d(y,x) to get x corresponding to P
+
 
     if 'x' in config1["infinit"]:
         p0 = config1["infinit"]["p"]
