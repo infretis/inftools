@@ -217,7 +217,7 @@ def initial_path_from_iretis(
 
         # first load order.txt to calculate maxop
         omax_active_paths = []
-        for traj in active_paths[2:]:
+        for traj in active_paths:
             order_file = traj / "order.txt"
             # ensure we are reading an actual path directory
             if not order_file.exists():
@@ -230,34 +230,36 @@ def initial_path_from_iretis(
         # sort wrt to increasing maxop, but exclude [0-] and [0+] path
         sorted_a_idx = np.argsort(omax_active_paths[2:])
         # sorted active (sa) paths, but [0-] and [0+] stay in 0 and 1
-        sa_omax = omax_active_paths[:2] + [omax_active_paths[i+1] for i in sorted_a_idx]
-        sa_paths = active_paths[:2] + [active_paths[i+1] for i in sorted_a_idx]
+        sa_omax = omax_active_paths[:2] + [omax_active_paths[2:][i] for i in sorted_a_idx]
+        sa_paths = active_paths[:2] + [active_paths[2:][i] for i in sorted_a_idx]
         # put the paths (sorted wrt max op) in increasing ensembles, add
         # interfaces from restart if needed
-        for traj, omax in zip(sa_paths[2:], sa_omax):
+        for traj, omax in zip(sa_paths[2:], sa_omax[2:]):
             is_valid_path = False
             valid_in = 0
             for i, interface in enumerate(interfaces[1:-1]):
                 if omax > interface:
                     # valid_in = 2 correspsonds to ensemble [1+]
                     valid_in = i + 2
+                    if valid_in not in out.keys():
+                        # stop on first valid path for each ensemble
+                        is_valid_path = True
+                        out[valid_in] = traj
+                        print(traj, valid_in, omax)
+                        break
                 else:
-                    break
-            if valid_in not in out.keys():
-                # stop on first valid path for each ensemble
-                is_valid_path = True
-                out[valid_in] = traj
                     break
             if not is_valid_path:
                 print(f"* Previous active path {traj} is not valid with the"
-                " new interfaces")
+                f" new interfaces (omax {omax} valid in {valid_in} intf {interface})")
                 if keep_all_active:
                     # if a path is not valid, e.g. in [i+], (i > 0) add a new
                     #interface halfway between interfaces[i-1] and omax
-                    new_intf = (omax - interfaces[valid_in-1])/2
+                    new_intf = np.round(interfaces[valid_in - 1] + (omax - interfaces[valid_in-1])/2, 4)
                     print(f"* keep_all_active flag set. Adding a new interface"
                     f" at {new_intf}")
                     out[valid_in+1] = traj
+                    print(traj, valid_in+1, omax)
                     interfaces = interfaces[:valid_in] + [new_intf] + interfaces[valid_in:]
                     if sh_m[valid_in] == "sh":
                         # sh sh wf should not be sh wf sh wf
@@ -272,7 +274,7 @@ def initial_path_from_iretis(
             toml.rename(new_toml_name)
             print(f"* Renamed {toml} to {new_toml_name}")
 
-        toml_dict["simulation"]["interfaces"] = interfaces + [last_interface]
+        toml_dict["simulation"]["interfaces"] = interfaces
         toml_dict["simulation"]["shooting_moves"] = sh_m
         with open(out_toml, "wb") as wfile:
             tomli_w.dump(toml_dict, wfile)
@@ -280,6 +282,8 @@ def initial_path_from_iretis(
 
     # Now clone paths to fill up the remaining ensembles
     np.random.shuffle(trajs) # We pick paths by random
+    max_valid_in = -np.inf
+    global_maxop = -np.inf
     for traj in trajs:
         order_file = traj / "order.txt"
         if not order_file.exists():
@@ -295,12 +299,22 @@ def initial_path_from_iretis(
         else:
             omax = np.max(x[:, 1])
             valid_in = False
-            for i, interface in enumerate(interfaces):
+            for i, interface in enumerate(interfaces[:-1]):
                 if omax > interface:
                     valid_in = i + 1
-            if valid_in and valid_in not in out.keys():
-                out[valid_in] = traj
-
+            if valid_in > max_valid_in:
+                max_valid_in = valid_in
+            if omax > global_maxop:
+                global_maxop = omax
+            while valid_in:
+                # if paths allready exist in high ensembles
+                if valid_in in out.keys():
+                    valid_in -= 1
+                else:
+                    out[valid_in] = traj
+                    print(traj, valid_in, omax)
+                    valid_in = 0
+    print(max_valid_in, global_maxop, interfaces)
 
     # if we miss some lower ensembles, add to
     # them the paths from the higher ensembles
@@ -313,8 +327,7 @@ def initial_path_from_iretis(
 
 
     # Check if we have paths in all ensembles
-    print(len(interfaces)+1, interfaces, out)
-    for i in range(len(interfaces) + 1):
+    for i in range(len(interfaces)):
         assert (
             i in out.keys()
         ), f"* Did not find any paths in ensemble {i}\
