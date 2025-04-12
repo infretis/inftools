@@ -102,7 +102,7 @@ def update_toml_interfaces(config):
             config1["output"]["data_file"],
             config1["simulation"]["interfaces"],
             config1["infinit"]["lamres"],
-            int(config1["infinit"]["skip"]*config1["infinit"]["cstep"],
+            int(config1["infinit"]["skip"]*config1["infinit"]["cstep"]),
             )
 
     if 'x' in config1["infinit"]:

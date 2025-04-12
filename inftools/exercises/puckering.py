@@ -237,10 +237,10 @@ def initial_path_from_iretis(
         for traj, omax in zip(sa_paths[2:], sa_omax[2:]):
             is_valid_path = False
             valid_in = 0
-            for i, interface in enumerate(interfaces[1:-1]):
+            for i, interface in enumerate(interfaces[:-1]):
                 if omax > interface:
                     # valid_in = 2 correspsonds to ensemble [1+]
-                    valid_in = i + 2
+                    valid_in = i + 1
                     if valid_in not in out.keys():
                         # stop on first valid path for each ensemble
                         is_valid_path = True
