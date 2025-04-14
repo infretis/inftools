@@ -173,6 +173,7 @@ def initial_path_from_iretis(
     out_dir = pathlib.Path(out_dir)
     toml = pathlib.Path(toml)
     if not active_path_dir:
+        # just use the most recent changed run dir
         active_path_dir = sorted(glob.glob(f"{traj}"), key = os.path.getctime)[-1]
     active_path_dir = pathlib.Path(active_path_dir)
     if not active_path_dir.exists():
@@ -198,8 +199,8 @@ def initial_path_from_iretis(
 
     interfaces = toml_dict["simulation"]["interfaces"]
     sh_m = toml_dict["simulation"]["shooting_moves"]
-    trajs = [pathlib.Path(i) for i in glob.glob(f"{traj}/*")]  # folder to trajectories
-     # sort so most recent run is first
+    trajs = [pathlib.Path(i) for i in glob.glob(f"{traj}/*")]
+     # sort so most recent trajectory files are considered first
     trajs = sorted(trajs, key=os.path.getctime)[::-1]
 
     # try to read active paths
@@ -248,7 +249,6 @@ def initial_path_from_iretis(
                         # stop on first valid path for each ensemble
                         is_valid_path = True
                         out[valid_in] = traj
-                        print(traj, valid_in, omax)
                         break
                 else:
                     break
@@ -262,7 +262,6 @@ def initial_path_from_iretis(
                     print(f"* keep_all_active flag set. Adding a new interface"
                     f" at {new_intf}")
                     out[valid_in+1] = traj
-                    print(traj, valid_in+1, omax)
                     interfaces = interfaces[:valid_in] + [new_intf] + interfaces[valid_in:]
                     if sh_m[valid_in] == "sh":
                         # sh sh wf should not be sh wf sh wf
@@ -315,9 +314,7 @@ def initial_path_from_iretis(
                     valid_in -= 1
                 else:
                     out[valid_in] = traj
-                    print(traj, valid_in, omax)
                     valid_in = 0
-    print(max_valid_in, global_maxop, interfaces)
 
     # if we miss some lower ensembles, add to
     # them the paths from the higher ensembles
