@@ -263,6 +263,6 @@ def infinit(
         iset["cstep"] += 1
         update_toml(config)
         if not has_load:
-            initial_path_from_iretis(f"run*", "infretis.toml")
+            initial_path_from_iretis(f"run*", "infretis.toml", restart = "restart.toml", active_path_dir=f"run{iset['cstep']-1}")
         else:
             print("Doesnt have load?")

@@ -145,6 +145,7 @@ def initial_path_from_iretis(
     restart: Annotated[str, typer.Option("-restart", help=".toml to restart file for reading last active paths")] = "",
     out_toml: Annotated[str, typer.Option("-out_toml", help="Output file if interfaces and shooting_moves are chagned")] = "",
     keep_all_active: Annotated[bool, typer.Option(help = "If active paths are no longer valid, add new interfaces")] = False,
+    active_path_dir: Annotated[str, typer.Option(help = "Directory to the active paths ('-traj' if not given)")] = "",
     ):
     """Pick out initial paths from an earlier infretis simulation.
 
@@ -170,15 +171,15 @@ def initial_path_from_iretis(
         functions
     """
     out_dir = pathlib.Path(out_dir)
-    trajdir = pathlib.Path(traj)
     toml = pathlib.Path(toml)
+    if not active_path_dir:
+        active_path_dir = sorted(glob.glob(f"{traj}"), key = os.path.getctime)[-1]
+    active_path_dir = pathlib.Path(active_path_dir)
+    if not active_path_dir.exists():
+        raise ValueError(f"No such directory: {active_path_dir}")
     if out_toml:
         out_toml = pathlib.Path(out_toml)
 
-    if not trajdir.exists():
-        raise ValueError(f"{trajdir} does not exist.")
-    if not trajdir.is_dir():
-        raise ValueError(f"{trajdir} is not a directory.")
     if out_dir.exists():
         raise ValueError(
             f"Directory {out_dir.resolve()} exists. Will not overwrite. "
@@ -197,7 +198,9 @@ def initial_path_from_iretis(
 
     interfaces = toml_dict["simulation"]["interfaces"]
     sh_m = toml_dict["simulation"]["shooting_moves"]
-    trajs = [pathlib.Path(pi) for pi in glob.glob(f"{trajdir}/*")]  # folder to trajectories
+    trajs = [pathlib.Path(i) for i in glob.glob(f"{traj}/*")]  # folder to trajectories
+     # sort so most recent run is first
+    trajs = sorted(trajs, key=os.path.getctime)[::-1]
 
     # try to read active paths
     if restart and restart_dict.get("current", False):
@@ -205,7 +208,7 @@ def initial_path_from_iretis(
         if not active_paths:
             print(f"* {restart} has 'current' section but no 'active' section.")
         else:
-            active_paths = [trajdir / str(ap) for ap in active_paths]
+            active_paths = [active_path_dir / str(ap) for ap in active_paths]
             print("* Active paths found. Trying to use previous active paths.")
 
     out = {}  # ensemble:traj_idx in load folder
