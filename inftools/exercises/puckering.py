@@ -236,8 +236,7 @@ def initial_path_from_iretis(
         # sorted active (sa) paths, but [0-] and [0+] stay in 0 and 1
         sa_omax = omax_active_paths[:2] + [omax_active_paths[2:][i] for i in sorted_a_idx]
         sa_paths = active_paths[:2] + [active_paths[2:][i] for i in sorted_a_idx]
-        # put the paths (sorted wrt max op) in increasing ensembles, add
-        # interfaces from restart if needed
+        # put the paths (sorted wrt max op) in increasing ensembles
         for traj, omax in zip(sa_paths[2:], sa_omax[2:]):
             is_valid_path = False
             valid_in = 0
