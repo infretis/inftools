@@ -176,7 +176,6 @@ def infinit(
     # Lecture 04:
     # define the grid spacing for lambda values. All interface positions are
     # are rounded off to this vlue
-    lamres = 0.01 # e.g. second digit if lamres = 0.01
 
     # skip this fraction of initial paths for analysis (when estimating new intf?)
     initskip = 0.1 # skip 10% of initial paths
@@ -215,17 +214,9 @@ def infinit(
         intf = config["simulation"]["interfaces"]
         d_lambda = max_op - intf[0]
         nworkers = config["runner"]["workers"]
-        lamres0 = 0.5*(d_lambda)/nworkers
-        # just divide by 2 until lamres checks out, then each intf remains
-        #on the bin positions
-        if nworkers>1:
-            while iset["lamres"]> lamres0:
-                iset["lamres"]/=2
-        if lamres0 != iset["lamres"]:
-            print(f"Lamres too large. Setting lamres to {iset['lamres']}.")
-
+        lamres0 = d_lambda/nworkers
         # new interfaces to use for first infretis sim
-        intf = [intf[0]] + [intf[0]+2*lamres0*(i+1) for i in range(nworkers-1)] + [intf[1]]
+        intf = [intf[0]] + [intf[0] + lamres0*(i+1) for i in range(nworkers-1)] + [intf[1]]
         sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
         # create symlink to load/1 path Nworker-1 times
