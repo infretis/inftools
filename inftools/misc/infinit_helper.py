@@ -6,6 +6,7 @@ import subprocess
 import pathlib as pl
 import numpy as np
 from inftools.tistools.path_weights import get_path_weights
+from scipy.interpolate import interp1d
 
 PHRASES = [
     ["Infinit mode:", "Engaging endless loops with ∞RETIS",],
@@ -143,9 +144,9 @@ def update_toml_interfaces(config):
     if num_ens:
         pL = Ptot**(1/(num_ens-2))
     else:
-        pL = max(0.3, Ptot**(1/(2*n)))
+        pL = max(config["infinit"]["pL"], Ptot**(1/(2*n)))
     config["infinit"]["prev_Pcross"] = pL
-    interfaces = estimate_interface_positions(x, p, pL)
+    interfaces = estimate_binless_interface_positions(x, p, pL)
     intf = list(interfaces) + config["simulation"]["interfaces"][-1:]
     config["simulation"]["interfaces"] = intf
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
@@ -239,7 +240,7 @@ def estimate_interface_positions(x, p, pL):
     """Place new interfaces based on Pcross.
 
     The interfaces are placed *evenly* such that the local crossing probability
-    is at *least* pL, meaning it is a bit higher than pL most of the time.
+    is at *least* pL, meaning it is a bit higher than pL most of the time
     """
     i = 0
     interfaces = [0]
@@ -257,6 +258,18 @@ def estimate_interface_positions(x, p, pL):
             i = i+1
         interfaces.append(i)
     return x[interfaces]
+
+def estimate_binless_interface_positions(x, p, pL):
+    """Estimate binless interface positions.
+
+    We interpolate pcross vs orderp, such that intf[i+1] = interp(ploc**(i+1)).
+    """
+    ip = interp1d(p, x)
+    n_intf = int(np.log(p[-1])/np.log(pL))
+    interfaces = [x[0]]
+    for i in range(n_intf):
+        interfaces.append(float(ip(pL**(i+1))))
+    return interfaces
 
 class LightLogger:
     def __init__(self, fname):
