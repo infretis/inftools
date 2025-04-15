@@ -53,7 +53,6 @@ def get_path_weights(
     # where n=sum(D['path_f'],axis=0)
     w = w / np.sum(w, axis=0) * np.sum(D["path_f"], axis=0)
     wsum = np.sum(w, axis = 0)
-    print(wsum)
     # Check if we can construct the crossing probability, if not we add
     # "fake" paths to estimate it
 
@@ -81,12 +80,12 @@ def get_path_weights(
         )
         A[j] = Q[K] * np.sum(w[j])
 
-    print(f"\nAll done! Weights saved to {out}.")
+    print(f"Weights saved to {out}.")
     np.savetxt(
         out,
         np.c_[D["pnr"], D["maxop"], A],
         header="path_nr\tmax_op\tweight",
-        fmt=["%8d", "%8.4f", "%16.8e"],
+        fmt=["%8d", "%9.5f", "%16.8e"],
     )
 
     # plot the binless crossing probability
@@ -103,6 +102,7 @@ def get_path_weights(
         if outP:
             pcross = np.c_[res_x, res_y]
             np.savetxt(outP, pcross)
+            print(f"Pcross saved to {outP}.")
 
     if plotP:
         import matplotlib.pyplot as plt
