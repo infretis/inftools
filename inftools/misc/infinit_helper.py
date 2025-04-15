@@ -6,7 +6,6 @@ import subprocess
 import pathlib as pl
 import numpy as np
 from inftools.tistools.path_weights import get_path_weights
-from scipy.interpolate import interp1d
 
 PHRASES = [
     ["Infinit mode:", "Engaging endless loops with ∞RETIS",],
@@ -260,16 +259,45 @@ def estimate_interface_positions(x, p, pL):
     return x[interfaces]
 
 def estimate_binless_interface_positions(x, p, pL):
-    """Estimate binless interface positions.
+    """Estimate binless interfaces that are equally spaced wrt pL, meaning
+    we only **approximately** have a local crossing probability of at least
+    pL.
 
-    We interpolate pcross vs orderp, such that intf[i+1] = interp(ploc**(i+1)).
+    We interpolate pcross (x) vs orderp (y), such that interp(0.5) gives the
+    orderp value that corresponds to P=0.5 (we actually interp -log[pcross]).
+
+    Notes:
+        * If the crossing probability drops more than N*pL in one step, we add N-1
+        interfaces between the previous and the current interface.
+
+        * The last interface is not added (the state B interface)
+
     """
-    ip = interp1d(p, x)
+    # estimate how many interfaces we need
     n_intf = int(np.log(p[-1])/np.log(pL))
-    interfaces = [x[0]]
-    for i in range(n_intf):
-        interfaces.append(float(ip(pL**(i+1))))
-    return interfaces
+    # p needs to be increasing so use -log(p[::-1]) here, meaning we have to
+    ip = np.interp([-np.log(pL**(i+1)) for i in range(n_intf)], -np.log(p), x)
+    print("=1"*5,ip, -np.log(p))
+
+    # we have N interfaces on top of each other if there are large drops (>pL)
+    intf, N = np.unique(ip, return_counts = True)
+
+    # add the first interface as well
+    intf = [x[0]] + list(intf)
+
+    # add N-1 interfaces between values where drops are large
+    print("=2"*5, intf)
+    for i in range(len(intf)-1):
+        Ni = N[i]
+        if Ni > 1:
+            i0 = intf[i]
+            i1 = intf[i+1]
+            delta = (i1-i0)/Ni
+            intf = intf[:i+1] + [i0 + delta*(j+1) for j in range(Ni-1)] + intf[i+1:]
+            print(Ni, i0, i1, delta, intf)
+        print(Ni)
+
+    return intf
 
 class LightLogger:
     def __init__(self, fname):
