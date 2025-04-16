@@ -15,6 +15,10 @@ def get_path_weights(
 
     The weights can be used to calculate observables as <O> = sum(wi*Oi), for
     predictive power analysis or to calculate binless crossing probabilities.
+
+    The option '-outP <filename>' calculates a binless crossing probability
+    and writes it to <filename>. It can be plotted together with the interfaces
+    given the option '-plotP'.
     """
     import os
 
@@ -99,7 +103,13 @@ def get_path_weights(
         for i, moi in enumerate(maxop_sorted):
             res_y.append(np.sum(weight_sorted[i:]) / sumw)
             res_x.append(moi)
+        res_x = np.array(res_x)
+        res_y = np.array(res_y)
         if outP:
+            # dont return duplicate values of x (the orderp) vs Pcross, only
+            # 1 Ptot per x-value, since we may have duplicates due to rounding
+            res_x, idx = np.unqiue(res_x, return_index=True)
+            res_y = res_y[idx]
             pcross = np.c_[res_x, res_y]
             np.savetxt(outP, pcross)
             print(f"Pcross saved to {outP}.")
