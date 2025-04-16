@@ -9,37 +9,26 @@ import tomli
 
 from inftools.analysis.wham import wham
 from inftools.tistools.combine_results import combine_data
+from inftools.misc.data_helper import data_reader
 
+HERE = PosixPath(__file__).parent
 
-@pytest.mark.heavy
-def test_infinit_1(tmp_path: PosixPath) -> None:
-    """Test infinit from phase point"""
-    folder = tmp_path / "temp"
-    folder.mkdir()
-    basepath = PosixPath(__file__).parent
-    data_dir = (basepath / "data").resolve()
-    shutil.copytree(str(data_dir), str(folder),dirs_exist_ok=True)
-    os.chdir(folder)
+DATD = HERE/"data"
+TOMLS=[str(i) for i in [DATD/"sim1.toml", DATD/"sim2.toml", DATD/"sim3.toml"]]
+DATAS = [str(i) for i in [DATD/"sim1.txt.gz", DATD/"sim2.txt.gz", DATD/"sim3.txt.gz"]]
 
-    tomls=["sim1.toml", "sim2.toml", "sim3.toml"]
-    combine_data(
-        tomls=tomls,
-        datas=["sim1.txt.gz", "sim2.txt.gz", "sim3.txt.gz"],
-        skip=[100],
-        out="combo"
-    )
-
+def wham_and_assert_results(name, wham_dir):
     # Assert that files exist
-    assert os.path.isfile("combo.toml")
-    assert os.path.isfile("combo.txt")
+    assert os.path.isfile(f"{name}.toml")
+    assert os.path.isfile(f"{name}.txt")
 
     # Get the combo interfaces.
-    with open("combo.toml", "rb") as rfile:
+    with open(f"{name}.toml", "rb") as rfile:
         conf = tomli.load(rfile)
         combo_intf = conf["simulation"]["interfaces"]
 
     intfs = []
-    for toml in tomls:
+    for toml in TOMLS:
         with open(toml, "rb") as rfile:
             conf = tomli.load(rfile)
             intf = conf["simulation"]["interfaces"]
@@ -48,15 +37,60 @@ def test_infinit_1(tmp_path: PosixPath) -> None:
     assert set(intfs) == set(combo_intf)
 
     # Run wham
-    wham(toml="combo.toml", data="combo.txt")
+    wham(toml=f"{name}.toml", data=f"{name}.txt", nskip = 0)
 
     # Assert that important files are created
-    assert os.path.isfile("wham/runav_rate.txt")
-    assert os.path.isfile("wham/runav_flux.txt")
-    assert os.path.isfile("wham/runav_Pcross.txt")
+    assert os.path.isfile(f"{wham_dir}/runav_rate.txt")
+    assert os.path.isfile(f"{wham_dir}/runav_flux.txt")
+    assert os.path.isfile(f"{wham_dir}/runav_Pcross.txt")
 
     # Test that we get good results
-    data = np.loadtxt("wham/runav_rate.txt")
+    data = np.loadtxt(f"{wham_dir}/runav_rate.txt")
     calc_rate = data[-1, -1]/0.025
     kramer = 2.58 * 10 **(-7) # from wf paper
     assert 100*abs(kramer-calc_rate)/kramer < 7 # %
+
+@pytest.mark.heavy
+def test_infinit_1(tmp_path: PosixPath) -> None:
+    """Test infinit from phase point"""
+    data_dir = (HERE / "data").resolve()
+    os.chdir(tmp_path)
+
+    combine_data(
+        tomls=TOMLS,
+        datas=DATAS,
+        skip=[100],
+        out="combo"
+    )
+
+    wham_and_assert_results("combo", "wham")
+
+
+@pytest.mark.heavy
+def test_infinit_2(tmp_path: PosixPath) -> None:
+    """Test that combining datas seperately gives the same result as at once.
+
+    With same results we mean the same WHAM results.
+    """
+    os.chdir(tmp_path)
+    # combine all at once
+    combine_data(tomls=TOMLS, datas=DATAS, skip=[0], out="combo_all")
+    # combine in 2 steps
+    combine_data(tomls=TOMLS[:2], datas=DATAS[:2], skip=[0], out="combo0")
+    combine_data(
+            tomls = ["combo0.toml"] + TOMLS[2:],
+            datas = ["combo0.txt"] + DATAS[2:],
+            out="combo_sep",
+            skip=[0],
+    )
+
+    combo_all_txt = data_reader("combo_all.txt")
+    combo_sep_txt = data_reader("combo_sep.txt")
+    # first check that we have same length in data files
+    assert len(combo_all_txt) == len(combo_sep_txt)
+    wham_and_assert_results("combo_all", "wham_all")
+    wham_and_assert_results("combo_sep", "wham_sep")
+
+    P_all = np.loadtxt(f"combo_all/Pcross.txt")
+    P_sep = np.loadtxt(f"combo_sep/Pcross.txt")
+    assert P_all == P_sep
