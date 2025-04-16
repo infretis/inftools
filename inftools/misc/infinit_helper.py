@@ -110,7 +110,6 @@ def update_toml_interfaces(config):
     x = xp[:,0]
     p = xp[:,1]
 
-
     if 'x' in config1["infinit"]:
         p0 = config1["infinit"]["p"]
         p0 = np.pad(p0, (0, len(x)-len(p0)))
