@@ -1,21 +1,7 @@
 import os
 import typer
 
-import numpy as np
-import pathlib as pl
-import shutil
-
 from typing import Annotated
-from infretis.classes.engines.factory import create_engines
-from infretis.classes.orderparameter import create_orderparameters
-from infretis.classes.path import Path, paste_paths
-from infretis.classes.repex import REPEX_state
-from infretis.classes.system import System
-from infretis.setup import setup_config
-from infretis.scheduler import scheduler
-
-from inftools.exercises.puckering import initial_path_from_iretis
-from inftools.misc.infinit_helper import *
 
 # export _TYPER_STANDARD_TRACEBACK=1
 
@@ -30,6 +16,17 @@ def generate_zero_paths(
     and backward in time until it crosses the lambda0 interface.
     These can be used to e.g. push the system up the barrier using
     multiple infRETIS simulations."""
+    import numpy as np
+    import pathlib as pl
+    import shutil
+
+    from infretis.classes.engines.factory import create_engines
+    from infretis.classes.orderparameter import create_orderparameters
+    from infretis.classes.path import Path, paste_paths
+    from infretis.classes.repex import REPEX_state
+    from infretis.classes.system import System
+    from infretis.setup import setup_config
+    from infretis.scheduler import scheduler
 
     # make a directory we work from
     tmp_dir = pl.Path("temporary_load/")
@@ -169,6 +166,9 @@ def infinit(
     log: Annotated[str, typer.Option("-log", help="File for logging output")] = "infretis_init.log",
     ):
     """The infretis initial path generator."""
+    from inftools.exercises.puckering import initial_path_from_iretis
+    from inftools.misc.infinit_helper import *
+
 
     # Based on the YouTube series:
     # https://www.youtube.com/watch?v=mW9tC2A7COs&list=PL5dSi5eZMe1iN_Uz8pTph6i8AGXhVUZIj&index=24
