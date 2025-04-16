@@ -142,8 +142,8 @@ def update_toml_interfaces(config):
         pL = Ptot**(1/(num_ens-2))
     else:
         pL = max(config["infinit"]["pL"], Ptot**(1/(2*n)))
-    config["infinit"]["prev_Pcross"] = pL
-    interfaces = estimate_binless_interface_positions(x, p, pL)
+    interfaces, pL_used = estimate_interface_positions(x, p, pL)
+    config["infinit"]["prev_Pcross"] = pL_used
     intf = list(interfaces) + config["simulation"]["interfaces"][-1:]
     config["simulation"]["interfaces"] = intf
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
@@ -203,61 +203,8 @@ def print_logo(step: int = 0):
     art.append(f"{str2:>45}", style="bright_cyan")
     console.print(art)
 
-def smoothen_pcross(x, p):
-    x_out = x[p!=0]
-    p = p[p!=0]
-    p = np.log10(p)
-
-    grad = p[1:] - p[:-1]
-    cliff_points = np.where(grad!=0)[0]
-    # the foot of a cliff is cliff_point + 1
-    foot_points = cliff_points + 1
-    foot_points = np.hstack((0,foot_points))
-    # add last point, its a cliff
-    cliff_points = np.hstack((cliff_points,p.shape[0]-1))
-    p_out = np.zeros((2, p.shape[0]))
-    prev_idx = 0
-    for idx in cliff_points:
-        delta = idx - prev_idx
-        x_ = np.linspace(0, 1, delta + 1)
-        p_out[0, prev_idx:idx] = p[prev_idx] - x_[:-1]*(p[prev_idx] - p[idx])
-        prev_idx = idx
-    p_out[0,idx:] = p[idx]
-
-    prev_idx = 0
-    for idx in foot_points:
-        delta = idx - prev_idx
-        x_ = np.linspace(0, 1, delta + 1)
-        p_out[1, prev_idx:idx] = p[prev_idx] - x_[:-1]*(p[prev_idx] - p[idx])
-        prev_idx = idx
-    p_out[1,idx:] = p[idx]
-    return x_out, 10**np.mean(p_out, axis=0)
-
 def estimate_interface_positions(x, p, pL):
-    """Place new interfaces based on Pcross.
-
-    The interfaces are placed *evenly* such that the local crossing probability
-    is at *least* pL, meaning it is a bit higher than pL most of the time
-    """
-    i = 0
-    interfaces = [0]
-    n_intf = int(np.log(p[-1])/np.log(pL)) + 1
-    pL_new = p[-1]**(1/n_intf)
-    for intf in range(n_intf):
-        idx = np.where(p/p[i] >= pL_new)[0]
-        if len(idx) == len(p):
-            break
-        i = idx[-1]
-        if p[-1]/p[i] > pL_new:
-            break
-        # when we drop more than pL**2 (but not more than pL**3)
-        if i in interfaces:
-            i = i+1
-        interfaces.append(i)
-    return x[interfaces]
-
-def estimate_binless_interface_positions(x, p, pL):
-    """Estimate binless interfaces that are equally spaced wrt pL, meaning
+    """Estimate (binless) interfaces that are equally spaced wrt pL, meaning
     we only **approximately** have a local crossing probability of at least
     pL.
 
