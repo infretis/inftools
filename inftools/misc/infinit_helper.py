@@ -120,8 +120,6 @@ def update_toml_interfaces(config):
         for idx, ip in enumerate(p):
             p[idx] = ip*w_n/(w_n+w_acc) + p0[idx]*w_acc/(w_n+w_acc)
 
-    x, p = smoothen_pcross(x, p) # also remove NaN and 0 Pcross
-
     # don't place interfaces above cap or last interface
     intf_cap = config["simulation"]["tis_set"].get(
             "interface_cap", config["simulation"]["interfaces"][-1]
@@ -267,37 +265,27 @@ def estimate_binless_interface_positions(x, p, pL):
     orderp value that corresponds to P=0.5 (we actually interp -log[pcross]).
 
     Notes:
-        * If the crossing probability drops more than N*pL in one step, we add N-1
-        interfaces between the previous and the current interface.
+        * The last interface is not added (the state B interface), such that the
+        probability to reach state B (or the interfa cap) remains pL.
 
-        * The last interface is not added (the state B interface)
+    Returns:
+        the interfaces estimated spaced approximately pL apart
+        the actual pL separation between interfaces
 
     """
     # estimate how many interfaces we need
     n_intf = int(np.log(p[-1])/np.log(pL))
-    # p needs to be increasing so use -log(p[::-1]) here, meaning we have to
-    ip = np.interp([-np.log(pL**(i+1)) for i in range(n_intf)], -np.log(p), x)
-    print("=1"*5,ip, -np.log(p))
 
-    # we have N interfaces on top of each other if there are large drops (>pL)
-    intf, N = np.unique(ip, return_counts = True)
+    # the actual pL_n_intf to use
+    pL_n_intf = p[-1]**(1/n_intf)
+
+    # p needs to be increasing so use -log(p[::-1]) here, meaning we have to
+    intf = np.interp([-np.log(pL_n_intf**(i+1)) for i in range(n_intf-1)], -np.log(p), x)
 
     # add the first interface as well
     intf = [x[0]] + list(intf)
 
-    # add N-1 interfaces between values where drops are large
-    print("=2"*5, intf)
-    for i in range(len(intf)-1):
-        Ni = N[i]
-        if Ni > 1:
-            i0 = intf[i]
-            i1 = intf[i+1]
-            delta = (i1-i0)/Ni
-            intf = intf[:i+1] + [i0 + delta*(j+1) for j in range(Ni-1)] + intf[i+1:]
-            print(Ni, i0, i1, delta, intf)
-        print(Ni)
-
-    return intf
+    return intf, pL_n_intf
 
 class LightLogger:
     def __init__(self, fname):
