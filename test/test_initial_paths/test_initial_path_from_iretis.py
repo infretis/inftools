@@ -48,5 +48,3 @@ def test_add_active_paths(tmp_path: pathlib.PosixPath):
         orderf = out0 / str(i+1) / "order.txt"
         x = np.loadtxt(orderf)
         assert np.max(x[:,1]) > intf
-
-
