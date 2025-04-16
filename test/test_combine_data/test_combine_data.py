@@ -37,7 +37,7 @@ def wham_and_assert_results(name, wham_dir):
     assert set(intfs) == set(combo_intf)
 
     # Run wham
-    wham(toml=f"{name}.toml", data=f"{name}.txt", nskip = 0)
+    wham(toml=f"{name}.toml", data=f"{name}.txt", nskip = 0, folder=f"{wham_dir}")
 
     # Assert that important files are created
     assert os.path.isfile(f"{wham_dir}/runav_rate.txt")
@@ -91,6 +91,6 @@ def test_infinit_2(tmp_path: PosixPath) -> None:
     wham_and_assert_results("combo_all", "wham_all")
     wham_and_assert_results("combo_sep", "wham_sep")
 
-    P_all = np.loadtxt(f"combo_all/Pcross.txt")
-    P_sep = np.loadtxt(f"combo_sep/Pcross.txt")
-    assert P_all == P_sep
+    P_all = np.loadtxt(f"wham_all/Pcross.txt")
+    P_sep = np.loadtxt(f"wham_sep/Pcross.txt")
+    assert np.allclose(P_all,P_sep)
