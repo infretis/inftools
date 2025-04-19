@@ -108,7 +108,7 @@ def get_path_weights(
         if outP:
             # dont return duplicate values of x (the orderp) vs Pcross, only
             # 1 Ptot per x-value, since we may have duplicates due to rounding
-            res_x, idx = np.unqiue(res_x, return_index=True)
+            res_x, idx = np.unique(res_x, return_index=True)
             res_y = res_y[idx]
             pcross = np.c_[res_x, res_y]
             np.savetxt(outP, pcross)
