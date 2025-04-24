@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pathlib
 
-from inftools.misc.infinit_helper import estimate_binless_interface_positions
+from inftools.misc.infinit_helper import estimate_interface_positions
 
 HERE = pathlib.Path(__file__).parent
 
@@ -10,6 +10,7 @@ HERE = pathlib.Path(__file__).parent
 # nice orderp values for testing
 X = np.array([i for i in range(10)])
 # bit harder with closely spaced x (but not duplicate values)
+# inftools.tistools.estimate_interface_positions does not return duplicates
 X2 = np.array([0] + [1 + 1e-4*i for i in range(4)] +  [i+2 for i in range(5)])
 
 # local crossing probability of 0.5
@@ -31,11 +32,12 @@ P1 = np.array([1, 1, 1] + [PL0**(i+3) for i in range(7)])
 def test_estimate_binless_pcross(x, p, pL):
     """Test that we can place interfaces exactly for some test cases.
 
+    NOTE:
     It is assumed that x does not contain duplicates, as returned by
-    `inf get_path_weights -outP pcross.txt`.
+    `inft get_path_weights -outP pcross.txt`.
     """
     # last interface is not added
-    interfaces, pL_used = estimate_binless_interface_positions(x, p, pL)
+    interfaces, pL_used = estimate_interface_positions(x, p, pL)
     expected_ptot_at_interfaces = [pL_used**(i) for i in range(len(interfaces))]
     # get actual Ptot at interfaces by interpolating X vs log(P)
     ptot_at_interfaces = np.exp(np.interp(interfaces, x, np.log(p)))
