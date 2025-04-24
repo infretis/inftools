@@ -93,6 +93,7 @@ def get_path_weights(
     )
 
     # plot the binless crossing probability
+    # (lying exacty on top of interface is counted as crossing, see path.py)
     if outP or plotP:
         idx = np.argsort(D["maxop"].flatten())
         maxop_sorted = D["maxop"][idx].flatten()
@@ -102,11 +103,9 @@ def get_path_weights(
         res_x = [interfaces[0]]
         for i, moi in enumerate(maxop_sorted):
             # do not return crossnig probability with duplicate orderp values
-            # the contributions are counted however, so the pcross is correct
             if res_x[-1] == moi:
-                res_x.pop(-1)
-                res_y.pop(-1)
-            res_y.append(np.sum(weight_sorted[i+1:]) / sumw)
+                continue
+            res_y.append(np.sum(weight_sorted[i:]) / sumw)
             res_x.append(moi)
         res_x = np.array(res_x)
         res_y = np.array(res_y)
