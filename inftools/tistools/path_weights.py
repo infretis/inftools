@@ -101,15 +101,16 @@ def get_path_weights(
         res_y = [1.0]
         res_x = [interfaces[0]]
         for i, moi in enumerate(maxop_sorted):
-            res_y.append(np.sum(weight_sorted[i:]) / sumw)
+            # do not return crossnig probability with duplicate orderp values
+            # the contributions are counted however, so the pcross is correct
+            if res_x[-1] == moi:
+                res_x.pop(-1)
+                res_y.pop(-1)
+            res_y.append(np.sum(weight_sorted[i+1:]) / sumw)
             res_x.append(moi)
         res_x = np.array(res_x)
         res_y = np.array(res_y)
         if outP:
-            # dont return duplicate values of x (the orderp) vs Pcross, only
-            # 1 Ptot per x-value, since we may have duplicates due to rounding
-            res_x, idx = np.unique(res_x, return_index=True)
-            res_y = res_y[idx]
             pcross = np.c_[res_x, res_y]
             np.savetxt(outP, pcross)
             print(f"Pcross saved to {outP}.")
