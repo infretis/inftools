@@ -17,13 +17,13 @@ def wham(
     folder: Annotated[str, typer.Option("-folder", help="Output folder")] = "wham",
     fener: Annotated[bool, typer.Option("-fener", help="If set, calculate the conditional free energy. See Wham_")] = False,
     nbx: Annotated[int, typer.Option("-nbx", help="Number of bins in x-direction when calculating the free-energy")] = 100,
-    nby: Annotated[int, typer.Option("-nby", help="Same as -nby but in y-direction")] = 100,
+    nby: Annotated[int, typer.Option("-nby", help="Same as -nbx but in y-direction")] = None,
     minx: Annotated[float, typer.Option("-minx", help="Minimum orderparameter value in the x-direction when calculating FE")] = 0.0,
     maxx: Annotated[float, typer.Option("-maxx", help="Maximum orderparameter value in the x-direction when calculating FE")] = 100.0,
-    miny: Annotated[float, typer.Option("-miny", help="Same as -minx but in y-direction")] = 0.0,
-    maxy: Annotated[float, typer.Option("-maxy", help="Same as -maxx but in y-direction")] = 360.0,
+    miny: Annotated[float, typer.Option("-miny", help="Same as -minx but in y-direction")] = None,
+    maxy: Annotated[float, typer.Option("-maxy", help="Same as -maxx but in y-direction")] = None,
     xcol: Annotated[int, typer.Option("-xcol", help="What column in order.txt to use as x-value when calculating FE")] = 1,
-    ycol: Annotated[int, typer.Option("-ycol", help="Same as -xcol but for y-value")] = 2,
+    ycol: Annotated[int, typer.Option("-ycol", help="Same as -xcol but for y-value")] = None,
     ):
     """Run Titus0 wham script."""
 
