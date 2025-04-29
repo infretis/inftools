@@ -56,6 +56,7 @@ def get_path_weights(
     # Need to scale w such that sum equals the number of (fractional) samples n
     # where n=sum(D['path_f'],axis=0)
     w = w / np.sum(w, axis=0) * np.sum(D["path_f"], axis=0)
+    w[np.isnan(w)]=0.0
     wsum = np.sum(w, axis = 0)
     # Check if we can construct the crossing probability, if not we add
     # "fake" paths to estimate it
