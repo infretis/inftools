@@ -6,6 +6,7 @@ import subprocess
 import pathlib as pl
 import numpy as np
 from inftools.tistools.path_weights import get_path_weights
+from inftools.tistools.combine_results import combine_data
 
 PHRASES = [
     ["Infinit mode:", "Engaging endless loops with ∞RETIS",],
@@ -99,25 +100,34 @@ def update_toml_interfaces(config):
     interfaces.
     """
     config1 = read_toml("restart.toml")
+    # current infinit step
+    cstep = config1["infinit"]["cstep"]
+    tomls = []
+    datas = []
+    skip = []
+    # use inft combine_data with previous combo.txt (if it exists)
+    # and current infretis_data.txt file
+    if pl.Path(f"combo_{cstep-1}.toml").exists() and pl.Path(f"combo_{cstep-1}.txt").exists():
+        tomls += [f"combo_{cstep-1}.toml"]
+        datas += [f"combo_{cstep-1}.txt"]
+        skip += [0]
+    combine_data(
+            tomls = tomls + ["restart.toml"],
+            datas = datas + [config1["output"]["data_file"]],
+            out=f"combo_{cstep}",
+            skip= skip + [int(config1["current"]["cstep"]*config1["infinit"]["skip"])],
+            )
+    # calculate crossing probability for interface estimation
     xp = get_path_weights(
-        toml = "restart.toml",
-        data = config1["output"]["data_file"],
-        nskip = int(config1["infinit"]["cstep"]*config1["infinit"]["skip"]),
+        toml = f"combo_{cstep}.toml",
+        data = f"combo_{cstep}.txt",
+        nskip = 0,
         outP = "last_infretis_pcross.txt",
         out = "last_infretis_path_weigths.txt",
         overw = True,
-    )
+        )
     x = xp[:,0]
     p = xp[:,1]
-
-    if 'x' in config1["infinit"]:
-        p0 = config1["infinit"]["p"]
-        p0 = np.pad(p0, (0, len(x)-len(p0)))
-        w_acc = config1["infinit"]["w_acc"]
-        w_n = config1["simulation"]["steps"]
-
-        for idx, ip in enumerate(p):
-            p[idx] = ip*w_n/(w_n+w_acc) + p0[idx]*w_acc/(w_n+w_acc)
 
     # don't place interfaces above cap or last interface
     intf_cap = config["simulation"]["tis_set"].get(
@@ -129,11 +139,6 @@ def update_toml_interfaces(config):
         p = p[:last_point[0]]
 
     n = config1["runner"]["workers"]
-
-    # save x, p for next round
-    config["infinit"]["x"] = x.tolist()
-    config["infinit"]["p"] = p.tolist()
-    config["infinit"]["w_acc"] = config1["infinit"].get("w_acc", 0) + config1["simulation"]["steps"]
 
     Ptot = p[-1]
     num_ens = config["infinit"].get("num_ens", False)
