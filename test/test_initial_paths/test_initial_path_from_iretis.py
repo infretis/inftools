@@ -14,9 +14,9 @@ def test_similar_interfaces(tmp_path: pathlib.PosixPath):
     """
     out0 = tmp_path / "test0"
     initial_path_from_iretis(
-            traj = "data/run0",
-            toml = "data/infretis0.toml",
-            restart = "data/restart0.toml",
+            traj = str(HERE/"data/run0"),
+            toml = str(HERE/"data/infretis0.toml"),
+            restart = str(HERE/"data/restart0.toml"),
             keep_all_active = True,
             out_dir = out0,
             )
@@ -30,9 +30,9 @@ def test_add_active_paths(tmp_path: pathlib.PosixPath):
     """Test that we can add interfaces if active paths are not valid."""
     out0 = tmp_path / "test1"
     initial_path_from_iretis(
-            traj = "data/run0",
-            toml = "data/infretis1.toml",
-            restart = "data/restart0.toml",
+            traj = str(HERE/"data/run0"),
+            toml = str(HERE/"data/infretis1.toml"),
+            restart = str(HERE/"data/restart0.toml"),
             keep_all_active = True,
             out_dir = out0,
             out_toml = tmp_path / "new_intf.toml"
