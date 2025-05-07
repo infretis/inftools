@@ -37,10 +37,15 @@ def test_infinit_1(tmp_path: PosixPath) -> None:
 
     config0 = read_toml(tomls[0])
     assert "infinit" in config0
-    assert "p" in config0["infinit"]
-    for toml in tomls[1:]:
+    for i,toml in enumerate(tomls):
         assert os.path.isfile(toml)
-        config = read_toml(toml)
-        assert "infinit" in config
-        assert "p" in config["infinit"]
-        assert len(config["infinit"]["p"]) >= len(config0["infinit"]["p"])
+        assert os.path.isfile(f"combo_{i}.toml")
+        assert os.path.isfile(f"combo_{i}.txt")
+        # number of lines in combined infretis_data
+        num_lines = num_lines = sum(1 for _ in open(f"combo_{i}.txt"))
+        # check that we actually have data
+        assert num_lines > 0
+        # check that we have more data than previous run
+        if i > 1:
+            assert num_lines > prev_run_num_lines
+        prev_run_num_lines = num_lines
