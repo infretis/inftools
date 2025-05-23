@@ -33,20 +33,46 @@ def set_default_infinit(config):
         infretis_data_i.txt file is not update in config at runtime
 
     """
-    interfaces = config["simulation"]["interfaces"]
-    if not 0 <= config["infinit"]["skip"] < 1:
-        raise ValueError("skip should be a fraction between 0 and 1!")
-    assert config["infinit"]["pL"] > 0
-    cstep = config["infinit"]["cstep"]
+    interfaces = np.array(config["simulation"]["interfaces"])
+    # set some default values first
+    pL = config["infinit"].get("pL", 0.3)
+    assert 0 <  pL < 1, "pL must be greater than 0 and less than 1"
+    config["infinit"]["pL"] = pL
+
+    err_msg = "'nskip' in [infinit] is replaced with 'skip', which is a fraction"
+    assert "nskip" not in config["infinit"].keys(), err_msg
+
+    skip = config["infinit"].get("skip", 0.1)
+    assert 0 <= skip < 1, "'skip' should be a fraction between 0 and 1!"
+    config["infinit"]["skip"] = skip
+
+    # smallest lamres possible is 1e-5 (based on infretis_data.txt resolution)
+    lamres = config["infinit"].get("lamres", 0.001)
+    assert lamres >= 1e-5, "'lamres' must be >= 1e-5"
+    config["infinit"]["lamres"] = lamres
+
+    # check that interfaces are multiples of lamres
+    rounded_intf = np.round(np.round(interfaces/lamres)*lamres, decimals=10)
+    err_intf = np.where(rounded_intf != interfaces)[0]
+    err_msg = (
+            f"Interfaces {interfaces[err_intf]} are not multiples of "
+            f"lamres={lamres}"
+            )
+    assert len(err_intf)==0, err_msg
+
+    cstep = config["infinit"].get("cstep",-1)
+    config["infinit"]["cstep"] = cstep
     if cstep == -1:
         assert len(interfaces) == 2, "Define 2 interfaces!"
-    #config["simulation"]["interfaces"] = [interfaces[0], interfaces[-1]]
-    #config["current"]["active"] = [0,1]
+        err_msg = "No 'initial_conf' specified in [infinit]"
+        assert "initial_conf" in config["infinit"].keys(), err_msg
+        init_conf = pl.Path(config["infinit"]["initial_conf"])
+        err_msg = f"'initial_conf' {init_conf.resolve()} does not exist!"
+        assert init_conf.exists(), err_msg
 
     steps_per_iter = config["infinit"]["steps_per_iter"]
     config["infinit"]["steps_per_iter"] = steps_per_iter
 
-    config["infinit"]["cstep"] = cstep
     assert cstep < len(steps_per_iter), "Nothing to do"
     if not np.all(np.array(steps_per_iter[max(cstep,0):])
             >= config["runner"]["workers"]):
@@ -54,8 +80,6 @@ def set_default_infinit(config):
                 " has to be larger or equal to the number of workers!")
     assert config["output"]["delete_old"] == False
     assert config["output"].get("delete_old_all", False) == False
-    # update check here based on maximum op value
-    # else we need less workers, or lower lamres
     if cstep > 0:
         print(f"Restarting infinit from iteration {cstep}.")
 
@@ -143,12 +167,17 @@ def update_toml_interfaces(config):
     Ptot = p[-1]
     num_ens = config["infinit"].get("num_ens", False)
     if num_ens:
-        pL = Ptot**(1/(num_ens-2))
+        pL = Ptot**(1/num_ens)
     else:
         pL = max(config["infinit"]["pL"], Ptot**(1/(2*n)))
     interfaces, pL_used = estimate_interface_positions(x, p, pL)
     config["infinit"]["prev_Pcross"] = pL_used
     intf = list(interfaces) + config["simulation"]["interfaces"][-1:]
+    # round interfaces to lambda resolution, and avoid precision errors
+    lamres = config["infinit"]["lamres"]
+    intf[1:-1] = np.round(np.round(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
+    # remove duplicates if any appear due to rounding of interfaces
+    intf = list(np.unique(intf))
     config["simulation"]["interfaces"] = intf
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
