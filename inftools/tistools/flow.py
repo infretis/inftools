@@ -8,7 +8,7 @@ def calc_flow(
     plot: Annotated[str, typer.Option("-plot", help="Plot the flow for those paths, string of spaced idxes")],
     toml: Annotated[str, typer.Option("-toml", help="The .toml input file defining the orderparameter")] = "infretis.toml",
     log: Annotated[str, typer.Option("-log", help="The .log file to read path numbers")] = "sim.log",
-    out: Annotated[bool, typer.Option("-out", help="The output of the analysis")] = False,
+    out: Annotated[str, typer.Option("-out", help="The output of the analysis")] = "",
     ):
     """
     Keep track of which parent paths are in which ensemble after each MC move.

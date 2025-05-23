@@ -13,13 +13,17 @@ def data_reader(inp):
         readmode = "r"
 
     with oopen(inp, readmode) as read:
-        # get number of ensembles from header
-        _, header, _ = [read.readline() for _ in range(3)]
-        ensl = len(header.rstrip().split()[5:])
+        ensl = 0
 
         # read line
         for line in read:
+            if line.startswith("#"):
+                continue
+
             rip = line.rstrip().split()
+            # get num ensembles from first-non comment line
+            if not ensl:
+                ensl = int(len(rip[3:])/2)
 
             # get line data
             pn, len0, max_op = rip[:3]
@@ -29,13 +33,13 @@ def data_reader(inp):
 
             # skip if no weights
             if set(f0l) == set(w0l) == set(("----",)):
-            	continue
+                continue
 
             # store only the weights based on col
             for col, (f0, w0) in enumerate(zip(f0l, w0l)):
-            	if '----' in (f0, w0):
-            		continue
-            	path["cols"][col] = [f0, w0]
+                if '----' in (f0, w0):
+                    continue
+                path["cols"][col] = [f0, w0]
 
             # append to paths list
             paths.append(path)

@@ -1,21 +1,11 @@
 import os
 import typer
 
-import numpy as np
-import pathlib as pl
-import shutil
-
 from typing import Annotated
-from infretis.classes.engines.factory import create_engines
-from infretis.classes.orderparameter import create_orderparameters
-from infretis.classes.path import Path, paste_paths
-from infretis.classes.repex import REPEX_state
-from infretis.classes.system import System
-from infretis.setup import setup_config
-from infretis.scheduler import scheduler
 
 from inftools.exercises.puckering import initial_path_from_iretis
 from inftools.misc.infinit_helper import *
+
 
 # export _TYPER_STANDARD_TRACEBACK=1
 
@@ -30,6 +20,17 @@ def generate_zero_paths(
     and backward in time until it crosses the lambda0 interface.
     These can be used to e.g. push the system up the barrier using
     multiple infRETIS simulations."""
+    import numpy as np
+    import pathlib as pl
+    import shutil
+
+    from infretis.classes.engines.factory import create_engines
+    from infretis.classes.orderparameter import create_orderparameters
+    from infretis.classes.path import Path, paste_paths
+    from infretis.classes.repex import REPEX_state
+    from infretis.classes.system import System
+    from infretis.setup import setup_config
+    from infretis.scheduler import scheduler
 
     # make a directory we work from
     tmp_dir = pl.Path("temporary_load/")
@@ -169,14 +170,12 @@ def infinit(
     log: Annotated[str, typer.Option("-log", help="File for logging output")] = "infretis_init.log",
     ):
     """The infretis initial path generator."""
-
     # Based on the YouTube series:
     # https://www.youtube.com/watch?v=mW9tC2A7COs&list=PL5dSi5eZMe1iN_Uz8pTph6i8AGXhVUZIj&index=24
 
     # Lecture 04:
     # define the grid spacing for lambda values. All interface positions are
     # are rounded off to this vlue
-    lamres = 0.01 # e.g. second digit if lamres = 0.01
 
     # skip this fraction of initial paths for analysis (when estimating new intf?)
     initskip = 0.1 # skip 10% of initial paths
@@ -198,7 +197,6 @@ def infinit(
     # TODO: restart, log file instead of print
     log = LightLogger(log)
 
-
     # we need among others parameters set in [infinit]
     config = read_toml(toml)
     # get the infinit settings from 'config' and set default parameters
@@ -208,24 +206,15 @@ def infinit(
         log.log("Generating zero paths ...")
         init_conf = pl.Path(iset["initial_conf"]).resolve()
         max_op = generate_zero_paths(str(init_conf), toml = toml)
-        iset["max_op"] = max_op
         log.log(f"Done with zero paths! Max op: {max_op}\n")
         iset["cstep"] = 0
         # for placing interfaces if we start with more than 1 worker
         intf = config["simulation"]["interfaces"]
         d_lambda = max_op - intf[0]
         nworkers = config["runner"]["workers"]
-        lamres0 = 0.5*(d_lambda)/nworkers
-        # just divide by 2 until lamres checks out, then each intf remains
-        #on the bin positions
-        if nworkers>1:
-            while iset["lamres"]> lamres0:
-                iset["lamres"]/=2
-        if lamres0 != iset["lamres"]:
-            print(f"Lamres too large. Setting lamres to {iset['lamres']}.")
-
+        lamres0 = d_lambda/nworkers
         # new interfaces to use for first infretis sim
-        intf = [intf[0]] + [intf[0]+2*lamres0*(i+1) for i in range(nworkers-1)] + [intf[1]]
+        intf = [intf[0]] + [intf[0] + lamres0*(i+1) for i in range(nworkers-1)] + [intf[1]]
         sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
         # create symlink to load/1 path Nworker-1 times
@@ -263,6 +252,6 @@ def infinit(
         iset["cstep"] += 1
         update_toml(config)
         if not has_load:
-            initial_path_from_iretis(f"run*", "infretis.toml")
+            initial_path_from_iretis(f"run*", "infretis.toml", restart = "restart.toml", active_path_dir=f"run{iset['cstep']-1}")
         else:
             print("Doesnt have load?")
