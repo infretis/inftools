@@ -197,7 +197,6 @@ def infinit(
     # TODO: restart, log file instead of print
     log = LightLogger(log)
 
-
     # we need among others parameters set in [infinit]
     config = read_toml(toml)
     # get the infinit settings from 'config' and set default parameters
@@ -207,7 +206,6 @@ def infinit(
         log.log("Generating zero paths ...")
         init_conf = pl.Path(iset["initial_conf"]).resolve()
         max_op = generate_zero_paths(str(init_conf), toml = toml)
-        iset["max_op"] = max_op
         log.log(f"Done with zero paths! Max op: {max_op}\n")
         iset["cstep"] = 0
         # for placing interfaces if we start with more than 1 worker
