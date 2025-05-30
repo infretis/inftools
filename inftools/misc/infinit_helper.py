@@ -51,15 +51,6 @@ def set_default_infinit(config):
     assert lamres >= 1e-5, "'lamres' must be >= 1e-5"
     config["infinit"]["lamres"] = lamres
 
-    # check that interfaces are multiples of lamres
-    rounded_intf = np.round(np.round(interfaces/lamres)*lamres, decimals=10)
-    err_intf = np.where(rounded_intf != interfaces)[0]
-    err_msg = (
-            f"Interfaces {interfaces[err_intf]} are not multiples of "
-            f"lamres={lamres}"
-            )
-    assert len(err_intf)==0, err_msg
-
     cstep = config["infinit"].get("cstep",-1)
     config["infinit"]["cstep"] = cstep
     if cstep == -1:
@@ -69,6 +60,18 @@ def set_default_infinit(config):
         init_conf = pl.Path(config["infinit"]["initial_conf"])
         err_msg = f"'initial_conf' {init_conf.resolve()} does not exist!"
         assert init_conf.exists(), err_msg
+
+    # check that interfaces are multiples of lamres
+    # but skip for first iteration
+    if cstep not in [-1,0]:
+        rounded_intf = np.round(np.round(interfaces/lamres)*lamres, decimals=10)
+        err_intf = np.where(rounded_intf != interfaces)[0]
+        err_msg = (
+            f"Interfaces {interfaces[err_intf]} are not multiples of "
+            f"lamres={lamres}"
+            )
+        assert len(err_intf)==0, err_msg
+
 
     steps_per_iter = config["infinit"]["steps_per_iter"]
     config["infinit"]["steps_per_iter"] = steps_per_iter
@@ -175,10 +178,16 @@ def update_toml_interfaces(config):
     intf = list(interfaces) + config["simulation"]["interfaces"][-1:]
     # round interfaces to lambda resolution, and avoid precision errors
     lamres = config["infinit"]["lamres"]
-    intf[1:-1] = np.round(np.round(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
+    intf_tmp = np.round(np.round(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
     # remove duplicates if any appear due to rounding of interfaces
-    intf = list(np.unique(intf))
-    config["simulation"]["interfaces"] = intf
+    intf_tmp = list(np.unique(intf_tmp))
+    # if we suddenly have less workers than interfaces, just return the
+    # 'non-rounded' interfaces
+    if len(intf_tmp) + 1 < n:
+        intf_tmp = intf[1:-1]
+        print("* Not rounding interfaces to lamres. Would give n_workers > n_ens.")
+
+    config["simulation"]["interfaces"] =intf[:1] +  intf_tmp + intf[-1:]
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
 def update_folders():
