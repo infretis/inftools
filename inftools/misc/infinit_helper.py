@@ -170,10 +170,10 @@ def update_toml_interfaces(config):
     Ptot = p[-1]
     num_ens = config["infinit"].get("num_ens", False)
     if num_ens:
-        pL = Ptot**(1/num_ens)
+        interfaces, pL_used = estimate_interface_positions(x, p, num_ens=num_ens)
     else:
         pL = max(config["infinit"]["pL"], Ptot**(1/(2*n)))
-    interfaces, pL_used = estimate_interface_positions(x, p, pL)
+        interfaces, pL_used = estimate_interface_positions(x, p, pL=pL)
     config["infinit"]["prev_Pcross"] = pL_used
     intf = list(interfaces) + config["simulation"]["interfaces"][-1:]
     # round interfaces to lambda resolution, and avoid precision errors
@@ -186,6 +186,8 @@ def update_toml_interfaces(config):
     if len(intf_tmp) + 1 < n:
         intf_tmp = intf[1:-1]
         print("* Not rounding interfaces to lamres. Would give n_workers > n_ens.")
+    elif len(intf_tmp) < len(intf)-2:
+        print(f"* Rounding interfaces to lamres, there are now {len(intf_tmp)+1} plus ensembles, and not {num_ens}")
 
     config["simulation"]["interfaces"] =intf[:1] +  intf_tmp + intf[-1:]
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
@@ -245,10 +247,10 @@ def print_logo(step: int = 0):
     art.append(f"{str2:>45}", style="bright_cyan")
     console.print(art)
 
-def estimate_interface_positions(x, p, pL):
+def estimate_interface_positions(x, p, pL=0.3, num_ens=False):
     """Estimate (binless) interfaces that are equally spaced wrt pL, meaning
     we only **approximately** have a local crossing probability of at least
-    pL.
+    pL. Alternatively, the number of ensembles can be supplied.
 
     We interpolate pcross (x) vs orderp (y), such that interp(0.5) gives the
     orderp value that corresponds to P=0.5 (we actually interp -log[pcross]).
@@ -263,18 +265,19 @@ def estimate_interface_positions(x, p, pL):
 
     """
     # estimate how many interfaces we need
-    n_intf = int(np.log(p[-1])/np.log(pL))
+    if not num_ens:
+        num_ens = int(np.log(p[-1])/np.log(pL))
 
     # the actual pL_n_intf to use
-    pL_n_intf = p[-1]**(1/n_intf)
+    pL_num_ens = p[-1]**(1/num_ens)
 
     # p needs to be increasing so use -log(p[::-1]) here, meaning we have to
-    intf = np.interp([-np.log(pL_n_intf**(i+1)) for i in range(n_intf-1)], -np.log(p), x)
+    intf = np.interp([-np.log(pL_num_ens**(i+1)) for i in range(num_ens-1)], -np.log(p), x)
 
     # add the first interface as well
     intf = [x[0]] + list(intf)
 
-    return intf, pL_n_intf
+    return intf, pL_num_ens
 
 class LightLogger:
     def __init__(self, fname):

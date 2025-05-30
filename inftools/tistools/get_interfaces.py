@@ -59,8 +59,7 @@ def estimate_interfaces2(
         interfaces = list(interfaces) + [iN]
 
     elif num is not None and ploc is None:
-        ploc = np.exp(np.log(p[-1]) / (num-1))
-        interfaces, ploc_used = estimate_interface_positions(x, p, ploc)
+        interfaces, ploc_used = estimate_interface_positions(x, p, num_ens=num)
         interfaces = list(interfaces) + [iN]
 
     else:
