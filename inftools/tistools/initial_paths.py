@@ -1,11 +1,10 @@
 import os
-import typer
-
 from typing import Annotated
+
+import typer
 
 from inftools.exercises.puckering import initial_path_from_iretis
 from inftools.misc.infinit_helper import *
-
 
 # export _TYPER_STANDARD_TRACEBACK=1
 
@@ -20,17 +19,15 @@ def generate_zero_paths(
     and backward in time until it crosses the lambda0 interface.
     These can be used to e.g. push the system up the barrier using
     multiple infRETIS simulations."""
-    import numpy as np
     import pathlib as pl
-    import shutil
 
+    import numpy as np
     from infretis.classes.engines.factory import create_engines
     from infretis.classes.orderparameter import create_orderparameters
     from infretis.classes.path import Path, paste_paths
     from infretis.classes.repex import REPEX_state
     from infretis.classes.system import System
     from infretis.setup import setup_config
-    from infretis.scheduler import scheduler
 
     # make a directory we work from
     tmp_dir = pl.Path("temporary_load/")
@@ -178,14 +175,11 @@ def infinit(
     # are rounded off to this vlue
 
     # skip this fraction of initial paths for analysis (when estimating new intf?)
-    initskip = 0.1 # skip 10% of initial paths
 
     # compute efficiency measure for present set of interfaces and optimal set
     # (estimated from WHAM). If efficiency is worse than some factor, we update
-    tolerance = 1.2 # if worse than 20% compared to optimal efficiency
 
     # estimated lower bound for local crossing probability
-    pL = 0.3
 
     # njumps Lp/Ls where Lp is average len full path, and Ls average len sub traj
     # lambda_cap to avoid A -> B trajs. E.g. 10% B->B paths in wf. Alternatively,
@@ -206,6 +200,7 @@ def infinit(
         log.log("Generating zero paths ...")
         init_conf = pl.Path(iset["initial_conf"]).resolve()
         max_op = generate_zero_paths(str(init_conf), toml = toml)
+        iset["max_op"] = max_op
         log.log(f"Done with zero paths! Max op: {max_op}\n")
         iset["cstep"] = 0
         # for placing interfaces if we start with more than 1 worker
@@ -252,6 +247,6 @@ def infinit(
         iset["cstep"] += 1
         update_toml(config)
         if not has_load:
-            initial_path_from_iretis(f"run*", "infretis.toml", restart = "restart.toml", active_path_dir=f"run{iset['cstep']-1}")
+            initial_path_from_iretis("run*", "infretis.toml", restart = "restart.toml", active_path_dir=f"run{iset['cstep']-1}")
         else:
             print("Doesnt have load?")
