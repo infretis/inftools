@@ -232,11 +232,15 @@ def initial_path_from_iretis(
                 print(f"* Did not find {traj_txt.resolve()}")
                 continue
             # ensure that the files needed are actually present in accepted/
+            missing_traj_file = False
             for traj_file in np.unique(np.loadtxt(traj_txt, usecols = [1],dtype=str)):
                 traj_file = traj / "accepted" / traj_file
                 if not traj_file.exists():
-                    print(f"* Did not find {traj_file.resolve()}")
-                    continue
+                    missing_traj_file = True
+                    #print(f"* Did not find {traj_file.resolve()}")
+                    break
+            if missing_traj_file:
+                continue
             x = np.loadtxt(order_file, usecols=[0, 1])
             omax = np.max(x[:, 1])
             omax_active_paths.append(omax)
@@ -296,9 +300,24 @@ def initial_path_from_iretis(
         if len(out.keys()) == len(interfaces):
             print("* All ensemles are filled.")
             break
+        # ensure that the files needed are actually present
         order_file = traj / "order.txt"
         if not order_file.exists():
             print(f"* Did not find {order_file.resolve()}")
+            continue
+        # check that traj.txt exists for traj reading
+        traj_txt = traj / "traj.txt"
+        if not traj_txt.exists():
+            print(f"* Did not find {traj_txt.resolve()}")
+            continue
+        missing_traj_file = False
+        for traj_file in np.unique(np.loadtxt(traj_txt, usecols = [1],dtype=str)):
+            traj_file = traj / "accepted" / traj_file
+            if not traj_file.exists():
+                missing_traj_file = True
+                # print(f"* Did not find {traj_file.resolve()}")
+                break
+        if missing_traj_file:
             continue
         x = np.loadtxt(order_file, usecols=[0, 1])
         # zero minus path (can include lambda_minus_one)
