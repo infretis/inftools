@@ -81,7 +81,10 @@ def set_default_infinit(config):
             >= config["runner"]["workers"]):
         raise ValueError("The number of infretis steps in steps_per_iter"
                 " has to be larger or equal to the number of workers!")
-    assert config["output"]["delete_old"] == False
+
+    if config["output"]["delete_old"]:
+        keep_max = config["output"].get("keep_maxop_trajs", False)
+        assert keep_max, "Cant have delete_old=true and keep_maxop_trajs=false"
     assert config["output"].get("delete_old_all", False) == False
     if cstep > 0:
         print(f"Restarting infinit from iteration {cstep}.")
@@ -102,6 +105,10 @@ def write_toml(config, toml):
         tomli_w.dump(config, wfile)
 
 def run_infretis_ext(steps):
+    """Run infretis as a subprocess.
+
+    Returns True if successful run, else False.
+    """
     c0 = read_toml("infretis.toml")
     c1 = read_toml("restart.toml")
     if c1 and c0["infinit"]["cstep"] == c1["infinit"]["cstep"] and len(c0["simulation"]["interfaces"])==len(c1["simulation"]["interfaces"]) and np.allclose(c0["simulation"]["interfaces"],c1["simulation"]["interfaces"]):
@@ -116,8 +123,20 @@ def run_infretis_ext(steps):
         c0["simulation"]["steps"] = steps
         write_toml(c0, "infretis.toml")
         subprocess.run("infretisrun -i infretis.toml", shell = True)
+    # check if successful run
+    c1 = read_toml("restart.toml")
+    completed_steps = c1["current"]["cstep"]
+    c1_infinit_cstep = c1["infinit"]["cstep"]
+    c0_infinit_cstep = c0["infinit"]["cstep"]
+    if not c1_infinit_cstep == c0_infinit_cstep:
+        print(f" *** restart.toml {c1_infinit_cstep} != {c0_infinit_cstep} infretis.toml")
+        print(" *** 'cstep' in [infinit] differ between restart.toml and infretis.toml")
+        return False
+    if not c1["infinit"]["steps_per_iter"][c1_infinit_cstep] == completed_steps:
+        print(" *** infretisrun did not complete all steps.")
+        return False
 
-
+    return True
 
 def update_toml_interfaces(config):
     """Update the interface positions from crossing probability.

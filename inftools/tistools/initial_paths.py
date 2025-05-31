@@ -200,7 +200,6 @@ def infinit(
         log.log("Generating zero paths ...")
         init_conf = pl.Path(iset["initial_conf"]).resolve()
         max_op = generate_zero_paths(str(init_conf), toml = toml)
-        iset["max_op"] = max_op
         log.log(f"Done with zero paths! Max op: {max_op}\n")
         iset["cstep"] = 0
         # for placing interfaces if we start with more than 1 worker
@@ -234,7 +233,10 @@ def infinit(
     print_logo(step = -1)
     for iretis_steps in iset["steps_per_iter"][iset["cstep"]:]:
         log.log(f"Step {iset['cstep']}: Running infretis")
-        run_infretis_ext(iretis_steps)
+        success = run_infretis_ext(iretis_steps)
+        if not success:
+            print(f" *** infinit exiting loop at cstep={iset['cstep']}")
+            return 1
         log.log("Updating interfaces.")
         # print(config)
         update_toml_interfaces(config)
