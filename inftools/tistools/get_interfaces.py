@@ -33,7 +33,6 @@ def estimate_interfaces2(
 
     from inftools.misc.infinit_helper import (
         estimate_interface_positions,
-        smoothen_pcross,
     )
 
     if plot:
@@ -55,24 +54,19 @@ def estimate_interfaces2(
     p = p0[first_idx:last_idx]
     p = p / p[0]
 
-    # linearalize the curve
-    x, p = smoothen_pcross(x, p)
-
     if ploc is not None and num is None:
-        interfaces = estimate_interface_positions(x, p, ploc)
+        interfaces, ploc_used = estimate_interface_positions(x, p, ploc)
         interfaces = list(interfaces) + [iN]
 
     elif num is not None and ploc is None:
-        ploc = np.exp(np.log(p[-1]) / (num - 1)) - 1e-6
-        interfaces = estimate_interface_positions(x, p, ploc)
+        interfaces, ploc_used = estimate_interface_positions(x, p, num_ens=num)
         interfaces = list(interfaces) + [iN]
 
     else:
         raise ValueError("Cant have both (or none) of -num and -ploc set!")
 
-    ploc = np.exp(np.log(p[-1]) / (len(interfaces) - 1))
     print(f"[INFO] There are now {len(interfaces)} interfaces.")
-    print(f"[INFO] Calculated local crossing probability = {ploc}")
+    print(f"[INFO] Calculated local crossing probability = {ploc_used}")
 
     print(
         "interfaces = [", ", ".join([f"{itf:.6f}" for itf in interfaces]) + "]"

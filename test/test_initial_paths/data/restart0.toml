@@ -1,0 +1,4 @@
+[simulation]
+interfaces = [0.0, 0.05, 0.1, 1.0]
+[current]
+active = [ 0, 1, 2, 3]
