@@ -125,6 +125,10 @@ def run_infretis_ext(steps):
         subprocess.run("infretisrun -i infretis.toml", shell = True)
     # check if successful run
     c1 = read_toml("restart.toml")
+    if not c1:
+        print(" *** Did not find restart.toml after infretisrun.")
+        print(" *** Something prevented infretis from starting")
+        return False
     completed_steps = c1["current"]["cstep"]
     c1_infinit_cstep = c1["infinit"]["cstep"]
     c0_infinit_cstep = c0["infinit"]["cstep"]
