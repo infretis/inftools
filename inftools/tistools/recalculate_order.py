@@ -10,6 +10,8 @@ class Format(str, Enum):
     ONE = "trr"
     TWO = "xyz"
     THR = "traj"
+    FOU = "rkf"
+
 
 
 def recalculate_order(
@@ -65,6 +67,11 @@ def recalculate_order(
     elif format == "g96":
         _, xyz, vel, box = read_gromos96_file(traj)
         traj = [[xyz, vel, box]]
+    elif format == "rkf":
+        from scm.plams.trajectories.rkffile import RKFTrajectoryFile
+        traj = RKFTrajectoryFile(traj)
+        traj.store_mddata()
+        mol = traj.get_plamsmol()
     else:
         u = mda.Universe(traj, format = format)
         traj = u.trajectory
@@ -84,6 +91,9 @@ def recalculate_order(
             elif format == "g96":
                 pos = frame[0]
                 box = frame[2]
+            elif format == "rkf":
+                pos, box = traj.read_frame(i, molecule=mol)
+                box = np.diag(box)
             else:
                 pos = u.atoms.positions
                 box = u.dimensions[:3]
