@@ -16,6 +16,7 @@ def run_analysis(inp_dic):
     nskip = int(inp_dic["nskip"])
     folder = inp_dic["folder"]
     histo_stuff = inp_dic["histo_stuff"]
+    lm1 = inp_dic["lm1"]
 
     # the Cxy values of [0+] are stored in the i0plus-th
     # column (first coulumn is counted as column nr 0)
@@ -334,6 +335,8 @@ def run_analysis(inp_dic):
                 if lmax == intfQ[0] and L > 2:
                     indexQ == 0
                     # round-off issue that should not lead to an exit
+                elif lm1 is not None:
+                    indexQ == 0
                 else:
                     print(
                         "Error: lambda_max is lower or equal"
@@ -353,7 +356,7 @@ def run_analysis(inp_dic):
     print("Remove redundant routine!!!!!!!!")
 
     # Alternative approach
-    WHAMfactors = get_WHAMfactors(matrix, lambda_interfaces, i0plus, Q)
+    WHAMfactors = get_WHAMfactors(matrix, lambda_interfaces, i0plus, Q, lm1)
     # gives for each path the \chi(X) factor from which we
     # can compute any ensemble average < property(X)  >_[0^+] as
     # sum_X A(X) Chi(X)
@@ -396,6 +399,8 @@ def run_analysis(inp_dic):
                 if lmax == intfQ[0] and L > 2:
                     indexH == 0
                     # round-off issue that should not lead to an exit
+                elif lm1 is not None:
+                    indexH == 0
                 else:
                     print(
                         "Error: lambda_max is lower or equal"
