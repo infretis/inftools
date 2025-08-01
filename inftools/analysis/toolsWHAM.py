@@ -1,4 +1,4 @@
-def get_WHAMfactors(matrix, lambda_interfaces, i0plus, Q):
+def get_WHAMfactors(matrix, lambda_interfaces, i0plus, Q, lm1):
     imax = 2  # index where lambda_max is stored
     intfQ = lambda_interfaces[
         :-1
@@ -16,6 +16,8 @@ def get_WHAMfactors(matrix, lambda_interfaces, i0plus, Q):
             if lmax == intfQ[0]:
                 indexQ == 0
                 # round-off issue that should not lead to an exit
+            elif lm1 is not None:
+                indexQ == 0
             else:
                 print(
                     "Error: lambda_max is lower or equal to all TIS interfaces"
