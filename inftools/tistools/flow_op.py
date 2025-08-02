@@ -25,13 +25,16 @@ def calc_flow_op(
         plt.axhline(intf, color="k", alpha=0.2)
 
     flow_map = calc_flow2(toml=toml, log=log)
+    reps = np.arange(len(intfs))
     xacc = 0
-    for idx, path in enumerate(flow_map[rep]["path"][1:]):
-        ens = flow_map[rep]["ens"][1:][idx]
-        print(load + f"/{path}/order.txt")
-        data = np.loadtxt(load + f"/{path}/order.txt")
-        plt.plot(data[:, 0] + xacc, data[:, 1], color=f"C{ens%8}")
-        xacc += len(data[:, 0])
+    for idx, path in enumerate(flow_map[reps[rep]]["path"][1:]):
+        ens = flow_map[reps[rep]]["ens"][1:][idx]
+        try:
+            data = np.loadtxt(load + f"/{path}/order.txt")
+            plt.plot(data[:, 0] + xacc, data[:, 1], color=f"C{ens%8}")
+            xacc += len(data[:, 0])
+        except:
+            continue
     plt.xlabel("Subcycles")
     plt.ylabel("Order Parameter")
     plt.show()

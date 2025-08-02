@@ -81,13 +81,11 @@ def calc_flow2(
             s2 = len(set(flow_map[ens]["path"]))
             s3 = len(set(pn_numbs + flow_map[ens]["path"]))
             assert s1 + s2 == s3
-            print(len(flow_map[ens]["path"]))
 
             plt.plot(flow_map[ens]["step"], flow_map[ens]["ens"], marker = "o", markersize = 5, color=f"C{idx%8}", label=f"Replica {ens}")
             plt.xlabel(f"MC steps")
             plt.ylabel(f"Ensemble")
             plt.legend()
-            plt.title(f"replica {ens:03.0f}")
         plt.show()
 
     return flow_map
