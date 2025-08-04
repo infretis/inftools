@@ -72,6 +72,7 @@ def calc_flow2(
 
 
     if len(plot) > 0:
+        print("hceeze")
         pn_numbs = []
         for idx, ens in enumerate([int(i) for i in plot.split(" ")]):
             # for ens in range(n_ensembles):
@@ -85,6 +86,7 @@ def calc_flow2(
             plt.plot(flow_map[ens]["step"], flow_map[ens]["ens"], marker = "o", markersize = 5, color=f"C{idx%8}", label=f"Replica {ens}")
             plt.xlabel(f"MC steps")
             plt.ylabel(f"Ensemble")
+            plt.ylim([0, n_ensembles])
             plt.legend()
         plt.show()
 
