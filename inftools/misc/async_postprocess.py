@@ -7,6 +7,7 @@ import os
 
 This script can be adapted to also calculate CVs etc.
 
+To run, put this script into load/.
 """
 
 TOP = "path_to_conf.gro"
@@ -30,14 +31,18 @@ futures = future_list()
 
 # here we only merge paths 101 to 1001, dummy variables
 start, end = 101, 1001
-for i in range(start, end):
-	futures.add(runner.submit_work({"ps":i}))
-    print("submitted:", i)
 
-
-for i in range(start, end):
-	future = futures.as_completed()
-    print("Done:", i, future)
-
+n_loops = end - start
+while loop_cnt < n_loops + n_workers:
+    if loop_cnt < n_workers:
+        print("submit", loop_cnt + start)
+        futures.add(runner.submit_work({"ps": loop_cnt + start}))
+    else:
+        future = futures.as_completed()
+        print("completed", future, "keep going", loop_cnt <= n_loops, loop_cnt, n_loops)
+        if loop_cnt <= n_loops:
+            print("submit", loop_cnt + start)
+            futures.add(runner.submit_work({"ps":loop_cnt + start}))
+    loop_cnt += 1
 
 runner.stop()
