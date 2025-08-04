@@ -12,6 +12,7 @@ def sim_acc(
     import os
     import matplotlib.pyplot as plt
     from inftools.misc.infinit_helper import read_toml
+    import numpy as np
     enss = {}
     with open(log, "r") as read:
         for idx, line in enumerate(read):
@@ -36,9 +37,10 @@ def sim_acc(
         x = keys
         label = "Ensemble"
 
-    plt.scatter(x[0], pacc[0],   color="C0", label="0-")
-    plt.scatter(x[1:], pacc[1:], color="C1", label="i+")
+    plt.scatter(x[0], np.array(pacc[0])*100,   color="C0", label="0-")
+    plt.scatter(x[1:], np.array(pacc[1:])*100, color="C1", label="i+")
     plt.xlabel(label)
     plt.ylabel("Acceptance probability [%]")
     plt.legend()
+    plt.ylim([0, 105])
     plt.show()
