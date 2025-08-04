@@ -49,7 +49,10 @@ def wham(
         print("No toml file, exit.")
         return
     inps["intfs"] = config["simulation"]["interfaces"]
-    inps["lm1"] = config["simulation"]["tis_set"].get("lambda_minus_one", None)
+    if "tis_set" in config["simulation"]:
+        inps["lm1"] = config["simulation"]["tis_set"].get("lambda_minus_one", None)
+    else:
+        inps["lm1"] = None
 
     if inps["lamres"] is None:
         inps["lamres"] = (inps["intfs"][1] - inps["intfs"][0]) / 10
