@@ -1,3 +1,3 @@
 [simulation]
-interfaces = [0.0, 0.2, 0.4, 1.0]
+interfaces = [0.0, 0.2, 0.3, 1.0]
 shooting_moves= ["sh", "sh", "wf", "wf"]
