@@ -3,9 +3,11 @@ import typer
 
 """https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package"""
 from importlib import resources as impresources
-from . import report
+# from . import report
+from . import __package__ as report_pkg
 JUP_REPORT = "infretis_report.ipynb"
-INP_FILE = impresources.files(report) / JUP_REPORT
+# INP_FILE = impresources.files(report) / JUP_REPORT
+INP_FILE = impresources.files("inftools.report") / JUP_REPORT
 
 def report(
     folder: Annotated[str, typer.Option("-folder", help="Output folder")] = "report",
