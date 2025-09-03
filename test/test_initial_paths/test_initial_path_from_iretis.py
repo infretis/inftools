@@ -23,6 +23,7 @@ def test_similar_interfaces(tmp_path: pathlib.PosixPath):
     for orderf in out0.glob("*/order.txt"):
         x0 = np.loadtxt(HERE/"data"/"run0"/str(orderf.parts[-2])/"order.txt")
         x = np.loadtxt(orderf)
+        assert x.shape == x0.shape
         assert np.allclose(x0,x)
 
 
