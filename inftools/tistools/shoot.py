@@ -6,6 +6,7 @@ def shoot(
     toml: Atd[str, Opt("-toml", help = "toml file from which engine settings and interfaces are read")] = "infretis.toml",
     name: Atd[str, Opt("-name", help = "working directory. The final path is stored in name/0")] = "shooting_dir0",
     index: Atd[int, Opt("-index", help = "shoot from this frame from a trajectory or traj.txt file")] = 0,
+    seed: Atd[int, Opt("-fixed_seed", help = "Fixes the random seed if set to a positive integer. -1 yields random seed.")] = -1,
     ):
     """Generate a path by performing a shooting move from a configuration.
 
@@ -37,7 +38,10 @@ def shoot(
     config["simulation"]["tis_set"]["allowmaxlength"] = True
     engine = create_engine(config)
     engine.order_function = create_orderparameter(config)
-    engine.rgen = np.random.default_rng()
+    if seed > -1:
+        engine.rgen = np.random.default_rng(seed=seed)
+    else:
+        engine.rgen = np.random.default_rng()
 
     traj = pathlib.Path(traj)
     if not traj.exists():

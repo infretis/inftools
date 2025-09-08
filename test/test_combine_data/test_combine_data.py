@@ -1,6 +1,5 @@
 """Test methods for combine_data."""
 import os
-import shutil
 from pathlib import PosixPath
 
 import numpy as np
