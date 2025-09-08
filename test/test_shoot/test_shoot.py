@@ -15,14 +15,11 @@ ORD0 = np.loadtxt(HERE/"DATA/order.txt")
 ENE0 = np.loadtxt(HERE/"DATA/energy.txt")
 TRJ0 = np.loadtxt(HERE/"DATA/traj.txt", dtype=str)
 
-print(ORD0)
-
 def test_shoot_1(tmp_path: PosixPath) -> None:
     """Tests the inftool shooting function with the turtlemd engine.
 
     This should yield a vaild [0^-] path.
     """
-    print(tmp_path)
     shutil.copy(TOML, tmp_path)
     os.chdir(tmp_path)
 
