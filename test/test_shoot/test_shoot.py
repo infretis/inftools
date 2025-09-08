@@ -11,9 +11,9 @@ HERE = PosixPath(__file__).parent
 TRAJ = HERE/"data/path/traj.txt"
 TOML = HERE/"data/infretis.toml"
 
-ORD0 = np.loadtxt(HERE/"DATA/order.txt")
-ENE0 = np.loadtxt(HERE/"DATA/energy.txt")
-TRJ0 = np.loadtxt(HERE/"DATA/traj.txt", dtype=str)
+ORD0 = np.loadtxt(HERE/"data/order.txt")
+ENE0 = np.loadtxt(HERE/"data/energy.txt")
+TRJ0 = np.loadtxt(HERE/"data/traj.txt", dtype=str)
 
 def test_shoot_1(tmp_path: PosixPath) -> None:
     """Tests the inftool shooting function with the turtlemd engine.
