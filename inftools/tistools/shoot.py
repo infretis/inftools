@@ -4,7 +4,7 @@ from typing import Annotated as Atd
 def shoot(
     traj: Atd[str, Opt("-traj", help = "a configuration file, trajectory file, or traj.txt file")] = "traj.txt",
     toml: Atd[str, Opt("-toml", help = "toml file from which engine settings and interfaces are read")] = "infretis.toml",
-    name: Atd[str, Opt("-name", help = "working directory. The final path is stored in name/0")] = "shooting_dir0",
+    name: Atd[str, Opt("-name", help = "working directory. The final path is stored in name/0")] = "worker0",
     index: Atd[int, Opt("-index", help = "shoot from this frame from a trajectory or traj.txt file")] = 0,
     seed: Atd[int, Opt("-fixed_seed", help = "Fixes the random seed if set to a positive integer. -1 yields random seed.")] = -1,
     ):
@@ -25,6 +25,8 @@ def shoot(
     """
     import pathlib
     import numpy as np
+    import tomli
+    import tomli_w
 
     from infretis.setup import setup_config
     from infretis.classes.engines.factory import create_engine
@@ -33,15 +35,6 @@ def shoot(
     from infretis.classes.path import Path
     from infretis.core.tis import shoot
     from infretis.classes.formatter import PathStorage
-    # setup
-    config = setup_config(toml)
-    config["simulation"]["tis_set"]["allowmaxlength"] = True
-    engine = create_engine(config)
-    engine.order_function = create_orderparameter(config)
-    if seed > -1:
-        engine.rgen = np.random.default_rng(seed=seed)
-    else:
-        engine.rgen = np.random.default_rng()
 
     traj = pathlib.Path(traj)
     if not traj.exists():
@@ -56,13 +49,32 @@ def shoot(
     wdir = pathlib.Path(name)
     if not wdir.exists():
         wdir.mkdir()
-    print(f"* Setting exe_dir to {wdir.resolve()}")
-    engine.exe_dir = wdir.resolve()
+
     # the infretis path will be saved in wdir/0
     if (wdir / "0").exists():
         exit(f"[ERROR] '{wdir/'0'}' already exists!")
     else:
         print(f"* infretis path will be saved in {wdir/'0'}")
+
+    # setup stuff, avoid certain errors like too many workers
+    tmp_toml = pathlib.Path(wdir / "shoot.toml").resolve()
+    with open(toml, "rb") as rfile:
+        with open(tmp_toml, "wb") as wfile:
+            config = tomli.load(rfile)
+            config["workers"] = 1
+            tomli_w.dump(config, wfile)
+
+    config = setup_config(str(tmp_toml))
+    config["simulation"]["tis_set"]["allowmaxlength"] = True
+    engine = create_engine(config)
+    engine.order_function = create_orderparameter(config)
+    if seed > -1:
+        engine.rgen = np.random.default_rng(seed=seed)
+    else:
+        engine.rgen = np.random.default_rng()
+
+    print(f"* Setting exe_dir to {wdir.resolve()}")
+    engine.exe_dir = wdir.resolve()
 
     intf = config["simulation"]["interfaces"]
     path = Path()
