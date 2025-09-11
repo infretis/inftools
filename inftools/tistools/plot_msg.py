@@ -5,6 +5,8 @@ import typer
 
 def plot_msg(
     toml: Annotated[str, typer.Option("-toml")] = "infretis.toml",
+    add_markers: Annotated[bool, typer.Option("--add_markers",
+        help = "Also plot markers on discrete phasepoints")] = False,
 ):
     """Plot the order printed in the worker*/msg* files, so we
     can visualize the progress of the shooting moves.
@@ -72,7 +74,8 @@ def plot_msg(
                 msg = np.loadtxt(wfolder + "/" + file)
                 if "trajB" in file:
                     axes[i].plot(
-                        msg[:, 0] + idx, msg[::-1, 1], ls="--", color=f"C{i%8}"
+                        msg[:, 0] + idx, msg[::-1, 1], ls="--", color=f"C{i%8}",
+                        marker="^" if add_markers else None,
                     )
                     axes[i].scatter(
                         [msg[0, 0] + idx],
@@ -91,7 +94,8 @@ def plot_msg(
                     )
                 else:
                     axes[i].plot(
-                        msg[:, 0] + idx - 1, msg[:, 1], color=f"C{i%8}"
+                        msg[:, 0] + idx - 1, msg[:, 1], color=f"C{i%8}",
+                        marker="o" if add_markers else None,
                     )
                     axes[i].scatter(
                         [msg[-1, 0] + idx - 1],
