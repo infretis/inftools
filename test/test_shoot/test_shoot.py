@@ -3,6 +3,7 @@ import shutil
 from pathlib import PosixPath
 
 import numpy as np
+import turtlemd
 
 from inftools.tistools.shoot import shoot
 
@@ -25,6 +26,8 @@ def test_shoot_1(tmp_path: PosixPath) -> None:
 
     sht_dir = "shooting_dir0"
     shoot(traj=TRAJ, toml=TOML, name=sht_dir, seed=0)
+
+    assert 0
 
     ord1 = np.loadtxt(sht_dir + "/0/order.txt")
     ene1 = np.loadtxt(sht_dir + "/0/energy.txt")
