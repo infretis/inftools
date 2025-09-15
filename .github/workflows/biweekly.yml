@@ -42,5 +42,8 @@ jobs:
       - name: "Install"
         run: poetry install
 
+      - name: "Install turtlemd"
+        run: pip install turtlemd
+
       - name: "Run pytest"
         run: poetry run pytest test
