@@ -43,8 +43,10 @@ def shoot(
     # check if traj.txt file or not (or traj_xtc.txt file)
     if "traj" in traj.stem and traj.suffix == ".txt":
         traj_txt = np.loadtxt(traj, dtype=str, comments=["#"])
-        conf = traj.parent / "accepted" / traj_txt[index, 1]
+        conf = str(traj.parent / "accepted" / traj_txt[index, 1])
         index = int(traj_txt[index, 2])
+    else:
+        conf = str(traj)
 
     wdir = pathlib.Path(name)
     if not wdir.exists():
@@ -67,6 +69,10 @@ def shoot(
     config = setup_config(str(tmp_toml))
     config["simulation"]["tis_set"]["allowmaxlength"] = True
     engine = create_engine(config)
+    engine.set_mdrun({
+        "wmdrun":config["runner"]["wmdrun"][0],
+        "exe_dir":str(wdir.resolve())
+        })
     engine.order_function = create_orderparameter(config)
     if seed > -1:
         engine.rgen = np.random.default_rng(seed=seed)
