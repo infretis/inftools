@@ -5,6 +5,7 @@ import typer
 
 def plot_ens(
     toml: Atd[str, typer.Option("-toml")] = "restart.toml",
+    data: Atd[str, typer.Option("-data")] = "",
     skip: Atd[bool, typer.Option("-skip", help="skip initial load paths")] = False,
     save: Atd[ str, typer.Option("-save", help="save with scienceplots.") ] = "no",
     pp: Atd[ bool, typer.Option("-pp", help="partial paths version") ] = False,
@@ -29,7 +30,10 @@ def plot_ens(
     with open(toml, "rb") as toml_file:
         toml = tomli.load(toml_file)
     intf = toml["simulation"]["interfaces"]
-    datafile = toml["output"]["data_file"]
+    if not toml["output"].get("data_file", False) and not data:
+        exit("Supply a infretis_data.txt file with -data")
+    else:
+        datafile = toml["output"]["data_file"]
     if not load:
         load_dir = toml["simulation"]["load_dir"]
     else:
