@@ -33,7 +33,7 @@ def plot_ens(
     if not toml["output"].get("data_file", False) and not data:
         exit("Supply a infretis_data.txt file with -data")
     elif data:
-        print("Using {data}")
+        print(f"Using {data}")
         datafile = data
     else:
         datafile = toml["output"]["data_file"]
