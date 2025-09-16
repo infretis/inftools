@@ -26,7 +26,7 @@ def plot_ens(
         plt.figure(figsize=(14, 10))
 
     # Read toml info
-    with open("restart.toml", "rb") as toml_file:
+    with open(toml, "rb") as toml_file:
         toml = tomli.load(toml_file)
     intf = toml["simulation"]["interfaces"]
     datafile = toml["output"]["data_file"]
