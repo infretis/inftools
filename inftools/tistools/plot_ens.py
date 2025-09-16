@@ -30,8 +30,10 @@ def plot_ens(
         toml = tomli.load(toml_file)
     intf = toml["simulation"]["interfaces"]
     datafile = toml["output"]["data_file"]
-    if not load_dir:
+    if not load:
         load_dir = toml["simulation"]["load_dir"]
+    else:
+        load_dir = load
 
     plt.title("intfs: " + " ".join([str(i) for i in intf]))
     plt.axhline(intf[0], ls="--", color="k", alpha=0.5)
