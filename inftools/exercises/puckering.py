@@ -146,6 +146,7 @@ def initial_path_from_iretis(
     out_toml: Annotated[str, typer.Option("-out_toml", help="Output file if interfaces and shooting_moves are chagned")] = "",
     keep_all_active: Annotated[bool, typer.Option(help = "If active paths are no longer valid, add new interfaces")] = False,
     active_path_dir: Annotated[str, typer.Option(help = "Directory to the active paths ('-traj' if not given)")] = "",
+    return_pathnr: Annotated[bool, typer.Option(help = "Only return the path numbers for each ensemble")] = False,
     ):
     """Pick out initial paths from an earlier infretis simulation.
 
@@ -181,13 +182,14 @@ def initial_path_from_iretis(
     if out_toml:
         out_toml = pathlib.Path(out_toml)
 
-    if out_dir.exists():
-        raise ValueError(
-            f"Directory {out_dir.resolve()} exists. Will not overwrite. "
-            "Rename or delete it manually. Aborting."
-        )
-    else:
-        os.mkdir(out_dir)
+    if not return_pathnr:
+        if out_dir.exists():
+            raise ValueError(
+                f"Directory {out_dir.resolve()} exists. Will not overwrite. "
+                "Rename or delete it manually. Aborting."
+            )
+        else:
+            os.mkdir(out_dir)
 
     # read interfaces from .toml file
     with open(toml, "rb") as toml_file:
@@ -356,11 +358,13 @@ def initial_path_from_iretis(
         ), f"* Did not find any paths in ensemble {i}\
     that cross the corresponding interface"
 
+    if not return_pathnr:
+        for i, traj in zip(out.keys(), out.values()):
+            shutil.copytree(traj, out_dir / str(i))
 
-    for i, traj in zip(out.keys(), out.values()):
-        shutil.copytree(traj, out_dir / str(i))
-
-    print(f"\nAll done! Created folder {out_dir} with new initial paths.")
+        print(f"\nAll done! Created folder {out_dir} with new initial paths.")
+    else:
+        return out
 
 def initial_path_from_md(
         trr: Annotated[str, typer.Option("-trr", help="The .trr trajectory file")],
