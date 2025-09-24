@@ -215,23 +215,6 @@ def update_toml_interfaces(config):
     config["simulation"]["interfaces"] =intf[:1] +  intf_tmp + intf[-1:]
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
-def update_folders():
-    config = read_toml("infretis.toml")
-    old_dir = pl.Path(config["simulation"]["load_dir"])
-    new_dir = pl.Path(f"run{config['infinit']['cstep']}")
-    if new_dir.exists():
-        msg = (f"{str(new_dir)} allready exists! Infinit does not "
-                + "overwrite.")
-        print(msg)
-        if not old_dir.exists():
-            print("Did not find {old_dir}.")
-            return False
-
-        return True
-
-    shutil.move(old_dir, new_dir)
-    return False
-
 def update_toml(config):
     config0 = read_toml("infretis.toml")
     config0["simulation"]["interfaces"] = config["simulation"]["interfaces"]
