@@ -244,11 +244,10 @@ def infinit(
         msg += ", ".join([str(intf) for intf in config["simulation"]["interfaces"]])
         msg += "]"
         log.log(msg)
-        log.log("Moving and writing files.")
-        has_load = update_folders()
+        #log.log("Moving and writing files.")
+        #has_load = update_folders()
         iset["cstep"] += 1
         update_toml(config)
-        if not has_load:
-            initial_path_from_iretis("run*", "infretis.toml", restart = "restart.toml", active_path_dir=f"run{iset['cstep']-1}")
-        else:
-            print("Doesnt have load?")
+        out = initial_path_from_iretis("load", "infretis.toml", restart = "restart.toml", active_path_dir=f"load", return_pathnr = True)
+        # update infretis.toml to be a restart.toml
+        update_actives_toml(out)

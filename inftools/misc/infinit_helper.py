@@ -240,6 +240,29 @@ def update_toml(config):
     shutil.copyfile("infretis.toml", f"infretis_{config['infinit']['cstep']}.toml")
     write_toml(config0, "infretis.toml")
 
+def update_actives_toml(out):
+    config0 = read_toml("infretis.toml")
+    config1 = read_toml("restart.toml")
+    config0["current"] = config1["current"]
+    # remove frac entry from infretis.toml
+    config0["current"]["frac"] = {}
+    config0["current"]["cstep"] = 0
+    traj_num = config0["current"]["traj_num"]
+    active = []
+    print(out)
+    #  rename active paths for next round
+    for i, path in enumerate(out.values()):
+        new_path_nr = traj_num + i
+        active.append(new_path_nr)
+        path_new = path.parent/f"{new_path_nr}"
+        path_new.symlink_to(path.resolve(), target_is_directory=True)
+    # traj_num should be 1 larger than largest path nr
+    config0["current"]["traj_num"] = new_path_nr + 1
+    config0["current"]["active"] = active
+    config0["current"]["size"] = len(active)
+    config0["output"]["data_file"] = f"infretis_data_{config0['infinit']['cstep']+1}.txt"
+    write_toml(config0, "infretis.toml")
+
 def print_logo(step: int = 0):
     from rich.console import Console
     from rich.text import Text
