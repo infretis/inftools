@@ -230,17 +230,19 @@ def update_actives_toml(out):
     # remove frac entry from infretis.toml
     config0["current"]["frac"] = {}
     config0["current"]["cstep"] = 0
+    config0["current"].pop("restarted_from")
     traj_num = config0["current"]["traj_num"]
     active = []
     print(out)
     #  rename active paths for next round
-    for i, path in enumerate(out.values()):
+    for i, path in out.items():
         new_path_nr = traj_num + i
         active.append(new_path_nr)
         path_new = path.parent/f"{new_path_nr}"
         path_new.symlink_to(path.resolve(), target_is_directory=True)
     # traj_num should be 1 larger than largest path nr
-    config0["current"]["traj_num"] = new_path_nr + 1
+    print(active)
+    config0["current"]["traj_num"] = max(active) + 1
     config0["current"]["active"] = active
     config0["current"]["size"] = len(active)
     config0["output"]["data_file"] = f"infretis_data_{config0['infinit']['cstep']+1}.txt"
