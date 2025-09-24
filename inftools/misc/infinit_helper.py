@@ -157,20 +157,20 @@ def update_toml_interfaces(config):
     skip = []
     # use inft combine_data with previous combo.txt (if it exists)
     # and current infretis_data.txt file
-    if pl.Path(f"combo_{cstep-1}.toml").exists() and pl.Path(f"combo_{cstep-1}.txt").exists():
-        tomls += [f"combo_{cstep-1}.toml"]
-        datas += [f"combo_{cstep-1}.txt"]
+    if pl.Path(f"combo_{cstep}.toml").exists() and pl.Path(f"combo_{cstep}.txt").exists():
+        tomls += [f"combo_{cstep}.toml"]
+        datas += [f"combo_{cstep}.txt"]
         skip += [0]
     combine_data(
             tomls = tomls + ["restart.toml"],
             datas = datas + [config1["output"]["data_file"]],
-            out=f"combo_{cstep}",
+            out=f"combo_{cstep+1}",
             skip= skip + [int(config1["current"]["cstep"]*config1["infinit"]["skip"])],
             )
     # calculate crossing probability for interface estimation
     xp = get_path_weights(
-        toml = f"combo_{cstep}.toml",
-        data = f"combo_{cstep}.txt",
+        toml = f"combo_{cstep+1}.toml",
+        data = f"combo_{cstep+1}.txt",
         nskip = 0,
         outP = "last_infretis_pcross.txt",
         out = "last_infretis_path_weigths.txt",
