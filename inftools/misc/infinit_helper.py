@@ -227,25 +227,30 @@ def update_actives_toml(out):
     config0 = read_toml("infretis.toml")
     config1 = read_toml("restart.toml")
     config0["current"] = config1["current"]
-    # remove frac entry from infretis.toml
+    # remove/change some entries in the 'current' section
     config0["current"]["frac"] = {}
     config0["current"]["cstep"] = 0
-    config0["current"].pop("restarted_from")
+    if "restarted_from" in config0["current"].keys():
+        config0["current"].pop("restarted_from")
     traj_num = config0["current"]["traj_num"]
-    active = []
-    print(out)
-    #  rename active paths for next round
-    for i, path in out.items():
+    # rename active paths for next round. They are not sorted wrt.
+    # ensembles so well do this here
+    active = [-1 for i in out.values()]
+    for i, path_old in out.items():
         new_path_nr = traj_num + i
-        active.append(new_path_nr)
-        path_new = path.parent/f"{new_path_nr}"
-        path_new.symlink_to(path.resolve(), target_is_directory=True)
+        active[i] = new_path_nr
+        path_new = path_old.parent/f"{new_path_nr}"
+        path_new.symlink_to(path_old.resolve(), target_is_directory=True)
     # traj_num should be 1 larger than largest path nr
-    print(active)
     config0["current"]["traj_num"] = max(active) + 1
+    # update active path list from the path numbers picked with new interfaces
     config0["current"]["active"] = active
     config0["current"]["size"] = len(active)
     config0["output"]["data_file"] = f"infretis_data_{config0['infinit']['cstep']+1}.txt"
+    # add interface column to infretis_data file
+    with open(config0["output"]["data_file"], "a") as wfile:
+        line = "#intf: " + ",".join(str(i) for i in config0["simulation"]["interfaces"]) + "\n"
+        wfile.write(line)
     write_toml(config0, "infretis.toml")
 
 def print_logo(step: int = 0):
