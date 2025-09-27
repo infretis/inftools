@@ -157,20 +157,20 @@ def update_toml_interfaces(config):
     skip = []
     # use inft combine_data with previous combo.txt (if it exists)
     # and current infretis_data.txt file
-    if pl.Path(f"combo_{cstep-1}.toml").exists() and pl.Path(f"combo_{cstep-1}.txt").exists():
-        tomls += [f"combo_{cstep-1}.toml"]
-        datas += [f"combo_{cstep-1}.txt"]
+    if pl.Path(f"combo_{cstep}.toml").exists() and pl.Path(f"combo_{cstep}.txt").exists():
+        tomls += [f"combo_{cstep}.toml"]
+        datas += [f"combo_{cstep}.txt"]
         skip += [0]
     combine_data(
             tomls = tomls + ["restart.toml"],
             datas = datas + [config1["output"]["data_file"]],
-            out=f"combo_{cstep}",
+            out=f"combo_{cstep+1}",
             skip= skip + [int(config1["current"]["cstep"]*config1["infinit"]["skip"])],
             )
     # calculate crossing probability for interface estimation
     xp = get_path_weights(
-        toml = f"combo_{cstep}.toml",
-        data = f"combo_{cstep}.txt",
+        toml = f"combo_{cstep+1}.toml",
+        data = f"combo_{cstep+1}.txt",
         nskip = 0,
         outP = "last_infretis_pcross.txt",
         out = "last_infretis_path_weigths.txt",
@@ -215,29 +215,42 @@ def update_toml_interfaces(config):
     config["simulation"]["interfaces"] =intf[:1] +  intf_tmp + intf[-1:]
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
-def update_folders():
-    config = read_toml("infretis.toml")
-    old_dir = pl.Path(config["simulation"]["load_dir"])
-    new_dir = pl.Path(f"run{config['infinit']['cstep']}")
-    if new_dir.exists():
-        msg = (f"{str(new_dir)} allready exists! Infinit does not "
-                + "overwrite.")
-        print(msg)
-        if not old_dir.exists():
-            print("Did not find {old_dir}.")
-            return False
-
-        return True
-
-    shutil.move(old_dir, new_dir)
-    return False
-
 def update_toml(config):
     config0 = read_toml("infretis.toml")
     config0["simulation"]["interfaces"] = config["simulation"]["interfaces"]
     config0["simulation"]["shooting_moves"] = config["simulation"]["shooting_moves"]
     config0["infinit"] = config["infinit"]
     shutil.copyfile("infretis.toml", f"infretis_{config['infinit']['cstep']}.toml")
+    write_toml(config0, "infretis.toml")
+
+def update_actives_toml(out):
+    config0 = read_toml("infretis.toml")
+    config1 = read_toml("restart.toml")
+    config0["current"] = config1["current"]
+    # remove/change some entries in the 'current' section
+    config0["current"]["frac"] = {}
+    config0["current"]["cstep"] = 0
+    if "restarted_from" in config0["current"].keys():
+        config0["current"].pop("restarted_from")
+    traj_num = config0["current"]["traj_num"]
+    # rename active paths for next round. They are not sorted wrt.
+    # ensembles so well do this here
+    active = [-1 for i in out.values()]
+    for i, path_old in out.items():
+        new_path_nr = traj_num + i
+        active[i] = new_path_nr
+        path_new = path_old.parent/f"{new_path_nr}"
+        path_new.symlink_to(path_old.resolve(), target_is_directory=True)
+    # traj_num should be 1 larger than largest path nr
+    config0["current"]["traj_num"] = max(active) + 1
+    # update active path list from the path numbers picked with new interfaces
+    config0["current"]["active"] = active
+    config0["current"]["size"] = len(active)
+    config0["output"]["data_file"] = f"infretis_data_{config0['infinit']['cstep']+1}.txt"
+    # add interface column to infretis_data file
+    with open(config0["output"]["data_file"], "a") as wfile:
+        line = "#intf: " + ",".join(str(i) for i in config0["simulation"]["interfaces"]) + "\n"
+        wfile.write(line)
     write_toml(config0, "infretis.toml")
 
 def print_logo(step: int = 0):

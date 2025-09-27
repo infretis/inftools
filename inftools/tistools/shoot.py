@@ -86,13 +86,14 @@ def shoot(
     path = Path()
     shooting_point = System()
     shooting_point.config = (conf, index)
+    engine.dump_phasepoint(shooting_point)
     # calculate order, this defines the starting conditions
     # if op < intf[0] we assume [0-] path
     # if op >= intf[0] and op < intf[-1] we assume [N+] path
     # if op >= intf[-1] what should we do?
     # modify velocities, which dumps the shooting point to genvel.ext
-    engine.modify_velocities(shooting_point, config["simulation"]["tis_set"])
     # now calculate orderp after vel generation, as order may depend on vels
+    engine.modify_velocities(shooting_point, config["simulation"]["tis_set"])
     order = engine.calculate_order(shooting_point)
     shooting_point.order = order
     print(f"* Initial orderparameter value: {order}")
