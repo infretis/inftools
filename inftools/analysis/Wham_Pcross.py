@@ -850,6 +850,7 @@ def run_analysis(inp_dic):
         WFtot = [a + b for a, b in zip(WHAMfactorsMIN, WHAMfactors)]
         trajlabels = [int(x[0]) for x in matrix]
 
-        calculate_free_energy(trajlabels, WFtot, inp_dic["trajdir"], folder, histo_stuff)
+        calculate_free_energy(trajlabels, WFtot, inp_dic["trajdir"],
+                              folder, histo_stuff, lambda_interfaces)
 
     # Finished!
