@@ -246,7 +246,20 @@ def update_actives_toml(out):
     # update active path list from the path numbers picked with new interfaces
     config0["current"]["active"] = active
     config0["current"]["size"] = len(active)
-    config0["output"]["data_file"] = f"infretis_data_{config0['infinit']['cstep']+1}.txt"
+    # new data file to be written is added to the infretis.toml
+    data_file = pl.Path(f"infretis_data_{config0['infinit']['cstep']+1}.txt")
+    config0["output"]["data_file"] = str(data_file)
+
+    # avoid overwriting any data files when running infretis with a 'data_file'
+    # given, so we rename any existing infretis_data.txt files here
+    if data_file.exists():
+        for i in range(1000):
+            new_data_file = data_file.parent / (data_file.name + f".{i}")
+            if not new_data_file.exists():
+                data_file.rename(new_data_file)
+                print(f"* File renamed from {data_file} to {new_data_file}")
+                break
+
     # add interface column to infretis_data file
     with open(config0["output"]["data_file"], "a") as wfile:
         line = "#intf: " + ",".join(str(i) for i in config0["simulation"]["interfaces"]) + "\n"
