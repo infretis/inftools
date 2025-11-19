@@ -190,6 +190,21 @@ def update_toml_interfaces(config):
 
     n = config1["runner"]["workers"]
 
+    # in some cases we might not have enough data to construct a Pcross
+    # curve, resulting in p having elements that are 0
+    zero_idx = np.where(p>0)[0]
+
+    # if all elements in pcross are 0 continue with same interfaces
+    # else remove the elements that are 0 and continue as usual
+    if len(zero_idx) == 0 or zero_idx[-1] == 0:
+        print("*** Could not construct Pcross curve, all elements are 0.")
+        print("*** Continuing with the same interfaces")
+        config["infinit"]["prev_Pcross"] = 0.0
+        return
+
+    p = p[:zero_idx[-1] + 1]
+    x = x[:zero_idx[-1] + 1]
+
     Ptot = p[-1]
     num_ens = config["infinit"].get("num_ens", False)
     if num_ens:

@@ -229,6 +229,7 @@ def infinit(
     if not pl.Path("infretis.toml").exists():
         print("Writing infretis.toml")
         c0 = read_toml(toml)
+        c0["infinit"] = iset
         write_toml(c0, "infretis.toml")
     print_logo(step = -1)
     for iretis_steps in iset["steps_per_iter"][iset["cstep"]:]:
