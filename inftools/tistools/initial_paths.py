@@ -252,3 +252,5 @@ def infinit(
         out = initial_path_from_iretis("load", "infretis.toml", restart = "restart.toml", active_path_dir=f"load", return_pathnr = True)
         # update infretis.toml to be a restart.toml
         update_actives_toml(out)
+        # rename restart file
+        rename_file("restart.toml", f"restart_{iset['cstep']-1}.toml")

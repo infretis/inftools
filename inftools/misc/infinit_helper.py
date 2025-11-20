@@ -238,6 +238,11 @@ def update_toml(config):
     shutil.copyfile("infretis.toml", f"infretis_{config['infinit']['cstep']}.toml")
     write_toml(config0, "infretis.toml")
 
+def rename_file(old_file, new_file):
+    old_file = pl.Path(old_file)
+    new_file = pl.Path(new_file)
+    old_file.rename(new_file)
+
 def update_actives_toml(out):
     config0 = read_toml("infretis.toml")
     config1 = read_toml("restart.toml")
