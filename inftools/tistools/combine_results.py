@@ -1,12 +1,5 @@
 from typing import Annotated
-
-import numpy as np
-import tomli
-import tomli_w
 import typer
-
-from inftools.misc.data_helper import data_reader
-
 
 def combine_data(tomls: Annotated[list[str], typer.Option("-tomls", help="tomls for all simulations")],
                  datas: Annotated[list[str], typer.Option("-datas", help="data files for all simulations")],
@@ -27,6 +20,14 @@ def combine_data(tomls: Annotated[list[str], typer.Option("-tomls", help="tomls 
     -skip can be either one value, or specific skip value
     must be specified for each simulation data.
     """
+
+    import numpy as np
+    import tomli
+    import tomli_w
+
+    from inftools.misc.data_helper import data_reader
+
+
     # do some initial checks
     assert len(set(tomls)) == len(tomls) == len(set(datas)) == len(datas)
 

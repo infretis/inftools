@@ -1,12 +1,7 @@
-import tomli
-import tomli_w
 import shutil
 import subprocess
 
 import pathlib as pl
-import numpy as np
-from inftools.tistools.path_weights import get_path_weights
-from inftools.tistools.combine_results import combine_data
 
 PHRASES = [
     ["Infinit mode:", "Engaging endless loops with ∞RETIS",],
@@ -33,6 +28,7 @@ def set_default_infinit(config):
         infretis_data_i.txt file is not update in config at runtime
 
     """
+    import numpy as np
     interfaces = np.array(config["simulation"]["interfaces"])
     # set some default values first
     pL = config["infinit"].get("pL", 0.3)
@@ -92,6 +88,7 @@ def set_default_infinit(config):
     return config["infinit"]
 
 def read_toml(toml):
+    import tomli
     toml = pl.Path(toml)
     if toml.exists():
         with open(toml, "rb") as rfile:
@@ -101,6 +98,7 @@ def read_toml(toml):
         return False
 
 def write_toml(config, toml):
+    import tomli_w
     with open(toml, "wb") as wfile:
         tomli_w.dump(config, wfile)
 
@@ -109,6 +107,7 @@ def run_infretis_ext(steps):
 
     Returns True if successful run, else False.
     """
+    import numpy as np
     c0 = read_toml("infretis.toml")
     c1 = read_toml("restart.toml")
     if c1 and c0["infinit"]["cstep"] == c1["infinit"]["cstep"] and len(c0["simulation"]["interfaces"])==len(c1["simulation"]["interfaces"]) and np.allclose(c0["simulation"]["interfaces"],c1["simulation"]["interfaces"]):
@@ -149,6 +148,9 @@ def update_toml_interfaces(config):
     the fact that we want equal local crossing probabilities betewen
     interfaces.
     """
+    from inftools.tistools.path_weights import get_path_weights
+    from inftools.tistools.combine_results import combine_data
+    import numpy as np
     config1 = read_toml("restart.toml")
     # current infinit step
     cstep = config1["infinit"]["cstep"]
@@ -289,6 +291,7 @@ def update_actives_toml(out):
 def print_logo(step: int = 0):
     from rich.console import Console
     from rich.text import Text
+    import numpy as np
 
     console = Console()
     art = Text()
@@ -333,6 +336,7 @@ def estimate_interface_positions(x, p, pL=0.3, num_ens=False):
         the actual pL separation between interfaces
 
     """
+    import numpy as np
     # estimate how many interfaces we need
     if not num_ens:
         num_ens = int(np.log(p[-1])/np.log(pL))

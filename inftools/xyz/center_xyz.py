@@ -1,8 +1,5 @@
 from typing import Annotated
-
 import typer
-
-from inftools.misc.xyz_help import calc_center
 
 
 def center_periodic(
@@ -14,6 +11,9 @@ def center_periodic(
     ],
 ):
     """This command re-centers an xyz trajectory to idx."""
+    from inftools.misc.xyz_help import calc_center
+
+
     atoms = None
     cnt = 0
     center = [0, 0, 0]

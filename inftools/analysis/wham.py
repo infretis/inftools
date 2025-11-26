@@ -1,12 +1,11 @@
 from typing import Annotated as Atd
 import typer
 from typer import Option as Opt
+import importlib
 
-import os
+import importlib.util
 
-import tomli
-
-from inftools.analysis.Wham_Pcross import run_analysis
+import sys
 
 
 def wham(
@@ -27,6 +26,13 @@ def wham(
     ycol: Atd[int, Opt("-ycol", help="Same as -xcol but for y-value")] = None,
     ):
     """Run Titus0 wham script."""
+    import os
+
+    # import tomli
+    from inftools.analysis.Wham_Pcross import run_analysis
+    # P = importlib.import_module("inftools.analysis.Wham_Pcross")
+    # run_analysis = getattr(P, "run_analysis")
+    # run_analysis = lazy_import("inftools.analysis.Wham_Pcross.run_analysis")
 
 
     inps = {

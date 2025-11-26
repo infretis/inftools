@@ -2,7 +2,7 @@ from typing import Annotated
 import typer
 
 # Disable automatic underscore -> hyphen in CLI names
-typer.main.get_command_name = lambda name: name
+# typer.main.get_command_name = lambda name: name
 
 def calc_flow(
     plot: Annotated[str, typer.Option("-plot", help="Plot the flow for those paths, string of spaced idxes")],

@@ -1,9 +1,9 @@
-from scipy.integrate import simpson
 
 def recursive_simpson(data, axes):
     """
     Recursively apply Simpson's rule to all dimensions of data.
     """
+    from scipy.integrate import simpson
     assert data.ndim == len(axes)
     if data.ndim == 1:
         return simpson(data, axes[0])
