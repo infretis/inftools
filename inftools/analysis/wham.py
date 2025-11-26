@@ -7,7 +7,6 @@ import importlib.util
 
 import sys
 
-
 def wham(
     toml: Atd[str, Opt("-toml", help="The infretis .toml file")] = "infretis.toml",
     data: Atd[str, Opt("-data", help="The infretis_data.txt file")] = "infretis_data.txt",
@@ -27,13 +26,8 @@ def wham(
     ):
     """Run Titus0 wham script."""
     import os
-
-    # import tomli
+    import tomli
     from inftools.analysis.Wham_Pcross import run_analysis
-    # P = importlib.import_module("inftools.analysis.Wham_Pcross")
-    # run_analysis = getattr(P, "run_analysis")
-    # run_analysis = lazy_import("inftools.analysis.Wham_Pcross.run_analysis")
-
 
     inps = {
         "toml": toml,
@@ -46,8 +40,9 @@ def wham(
         "histo_stuff":{
             "nbx":nbx, "minx":minx, "maxx":maxx, "xcol":xcol,
             "nby":nby, "miny":miny, "maxy":maxy, "ycol":ycol,
-            }
+        }
     }
+
     # load input:
     if os.path.isfile(inps["toml"]):
         with open(inps["toml"], mode="rb") as read:
