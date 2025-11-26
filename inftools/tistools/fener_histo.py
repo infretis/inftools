@@ -1,6 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
 from typing import Annotated as Atd
 from typer import Option as Opt
 
@@ -12,8 +9,11 @@ def plot_hist(
     """
     Plot the output from the WHAM free-energy analysis.
     """
+    import numpy as np
+    import matplotlib.pyplot as plt
+
     x = np.loadtxt(xval)
     y = np.loadtxt(yval)
     h = np.loadtxt(hist)
-    plt.pcolormesh(y, x, h)
+    plt.pcolormesh(x, y, h)
     plt.show()

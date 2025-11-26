@@ -1,7 +1,7 @@
-import numpy as np
 
 
 def rec_blocks_np(r):
+    import numpy as np
     r_np = np.array(r)
     n = len(r_np)
     result = np.zeros(n, dtype=r_np.dtype)
@@ -11,6 +11,7 @@ def rec_blocks_np(r):
 
 
 def rec_block_errors(runav, minblocks):
+    import numpy as np
     maxbll = int(len(runav) / minblocks)  # maximum block length
     bestav = runav[-1]  # most accurate average we have
     rel_errors = []
