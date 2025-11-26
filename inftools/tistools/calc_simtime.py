@@ -4,7 +4,6 @@ from typing import Annotated, Optional
 
 def calc_simtime(
     log: Annotated[str, typer.Option("-log")] = "sim.log",
-    skip: Annotated[int, typer.Option("-skip")] = 100,
     plot: Annotated[bool, typer.Option("-plot")] = True,
     ):
     """Calculate the total simulation wall time while
@@ -18,7 +17,8 @@ def calc_simtime(
     format_str = "%Y.%m.%d %H:%M:%S"
 
     paths = []
-    starts = []
+    pstarts = []
+    tstarts = []
     # previous, current time
     ptime, ctime = None, None
 
@@ -27,7 +27,8 @@ def calc_simtime(
             if "submit worker 0 START" in line:
                 ptime = datetime.strptime(line[-20:-1], format_str)
                 ctime = None
-                starts.append(len(paths))
+                pstarts.append(len(paths))
+                tstarts.append(np.sum(paths)/3600/24)
             if "shooting" in line:
                 line = read.readline()
                 if "date" in line:
@@ -37,16 +38,22 @@ def calc_simtime(
                     ctime = datetime.strptime(rip, format_str)
                     paths.append((ctime-ptime).total_seconds())
 
-    # enforce skip
-    paths = paths[skip:]
+    # tstarts = [np.sum(paths[:i])/3600/24 for i in pstarts]
 
     if plot:
-        plt.plot(np.arange(len(paths)), np.cumsum(paths)/3600/24)
-        for start in starts:
+        # plt.plot(np.arange(len(paths)), np.cumsum(paths)/3600/24)
+        plt.plot(np.cumsum(paths)/3600/24, np.arange(len(paths)))
+        np.savetxt("simtime.txt", np.array([np.cumsum(paths)/3600/24, np.arange(len(paths))]).T)
+        for pstart, tstart in zip(pstarts, tstarts):
             # plt.axvline(np.sum(paths[:start]))
-            plt.axvline(start, color="k", ls="--")
-        plt.xlabel("Sampled Paths")
-        plt.ylabel("Time [Days]")
+            plt.axvline(tstart, color="k", ls="--")
+            # plt.axhline(pstart, color="k", ls="--")
+        plt.ylabel("Shooting Attempts")
+        plt.xlabel("Time [Days]")
         plt.show()
 
-    return np.sum(paths)/3600/24, len(starts)-1
+    print(f"Total Wall Time: {np.sum(paths)/3600/24:.01f} Days")
+    print(f"Total Restarts: {len(tstarts)-1}")
+    print(f"Total Sampled Paths: {len(paths)}")
+
+    return np.sum(paths)/3600/24, len(tstarts)-1
