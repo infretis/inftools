@@ -1,12 +1,7 @@
-import tomli
-import tomli_w
 import shutil
 import subprocess
 
 import pathlib as pl
-import numpy as np
-from inftools.tistools.path_weights import get_path_weights
-from inftools.tistools.combine_results import combine_data
 
 PHRASES = [
     ["Infinit mode:", "Engaging endless loops with ∞RETIS",],
@@ -33,6 +28,7 @@ def set_default_infinit(config):
         infretis_data_i.txt file is not update in config at runtime
 
     """
+    import numpy as np
     interfaces = np.array(config["simulation"]["interfaces"])
     # set some default values first
     pL = config["infinit"].get("pL", 0.3)
@@ -92,6 +88,7 @@ def set_default_infinit(config):
     return config["infinit"]
 
 def read_toml(toml):
+    import tomli
     toml = pl.Path(toml)
     if toml.exists():
         with open(toml, "rb") as rfile:
@@ -101,6 +98,7 @@ def read_toml(toml):
         return False
 
 def write_toml(config, toml):
+    import tomli_w
     with open(toml, "wb") as wfile:
         tomli_w.dump(config, wfile)
 
@@ -109,6 +107,7 @@ def run_infretis_ext(steps):
 
     Returns True if successful run, else False.
     """
+    import numpy as np
     c0 = read_toml("infretis.toml")
     c1 = read_toml("restart.toml")
     if c1 and c0["infinit"]["cstep"] == c1["infinit"]["cstep"] and len(c0["simulation"]["interfaces"])==len(c1["simulation"]["interfaces"]) and np.allclose(c0["simulation"]["interfaces"],c1["simulation"]["interfaces"]):
@@ -149,6 +148,9 @@ def update_toml_interfaces(config):
     the fact that we want equal local crossing probabilities betewen
     interfaces.
     """
+    from inftools.tistools.path_weights import get_path_weights
+    from inftools.tistools.combine_results import combine_data
+    import numpy as np
     config1 = read_toml("restart.toml")
     # current infinit step
     cstep = config1["infinit"]["cstep"]
@@ -190,6 +192,21 @@ def update_toml_interfaces(config):
 
     n = config1["runner"]["workers"]
 
+    # in some cases we might not have enough data to construct a Pcross
+    # curve, resulting in p having elements that are 0
+    zero_idx = np.where(p>0)[0]
+
+    # if all elements in pcross are 0 continue with same interfaces
+    # else remove the elements that are 0 and continue as usual
+    if len(zero_idx) == 0 or zero_idx[-1] == 0:
+        print("*** Could not construct Pcross curve, all elements are 0.")
+        print("*** Continuing with the same interfaces")
+        config["infinit"]["prev_Pcross"] = 0.0
+        return
+
+    p = p[:zero_idx[-1] + 1]
+    x = x[:zero_idx[-1] + 1]
+
     Ptot = p[-1]
     num_ens = config["infinit"].get("num_ens", False)
     if num_ens:
@@ -223,6 +240,11 @@ def update_toml(config):
     shutil.copyfile("infretis.toml", f"infretis_{config['infinit']['cstep']}.toml")
     write_toml(config0, "infretis.toml")
 
+def rename_file(old_file, new_file):
+    old_file = pl.Path(old_file)
+    new_file = pl.Path(new_file)
+    old_file.rename(new_file)
+
 def update_actives_toml(out):
     config0 = read_toml("infretis.toml")
     config1 = read_toml("restart.toml")
@@ -246,7 +268,20 @@ def update_actives_toml(out):
     # update active path list from the path numbers picked with new interfaces
     config0["current"]["active"] = active
     config0["current"]["size"] = len(active)
-    config0["output"]["data_file"] = f"infretis_data_{config0['infinit']['cstep']+1}.txt"
+    # new data file to be written is added to the infretis.toml
+    data_file = pl.Path(f"infretis_data_{config0['infinit']['cstep']+1}.txt")
+    config0["output"]["data_file"] = str(data_file)
+
+    # avoid overwriting any data files when running infretis with a 'data_file'
+    # given, so we rename any existing infretis_data.txt files here
+    if data_file.exists():
+        for i in range(1000):
+            new_data_file = data_file.parent / (data_file.name + f".{i}")
+            if not new_data_file.exists():
+                data_file.rename(new_data_file)
+                print(f"* File renamed from {data_file} to {new_data_file}")
+                break
+
     # add interface column to infretis_data file
     with open(config0["output"]["data_file"], "a") as wfile:
         line = "#intf: " + ",".join(str(i) for i in config0["simulation"]["interfaces"]) + "\n"
@@ -256,6 +291,7 @@ def update_actives_toml(out):
 def print_logo(step: int = 0):
     from rich.console import Console
     from rich.text import Text
+    import numpy as np
 
     console = Console()
     art = Text()
@@ -300,6 +336,7 @@ def estimate_interface_positions(x, p, pL=0.3, num_ens=False):
         the actual pL separation between interfaces
 
     """
+    import numpy as np
     # estimate how many interfaces we need
     if not num_ens:
         num_ens = int(np.log(p[-1])/np.log(pL))

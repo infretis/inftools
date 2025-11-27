@@ -1,13 +1,11 @@
-import os
-
-import numpy as np
-
-from inftools.analysis.rec_error import rec_block_errors
-from inftools.analysis.toolsWHAM import PcrossWHAM2, get_WHAMfactors
-from inftools.analysis.Free_energy import calculate_free_energy
-
-
 def run_analysis(inp_dic):
+    import os
+    import numpy as np
+
+    from inftools.analysis.rec_error import rec_block_errors
+    from inftools.analysis.toolsWHAM import PcrossWHAM2, get_WHAMfactors
+    from inftools.analysis.Free_energy import calculate_free_energy
+
     CalcFE = inp_dic["fener"]
     ifile = inp_dic["data"]
     lambda_interfaces = [float(i) for i in inp_dic["intfs"]]

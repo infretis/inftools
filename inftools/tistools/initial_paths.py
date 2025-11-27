@@ -2,8 +2,6 @@ import os
 from typing import Annotated
 
 import typer
-
-from inftools.exercises.puckering import initial_path_from_iretis
 from inftools.misc.infinit_helper import *
 
 # export _TYPER_STANDARD_TRACEBACK=1
@@ -28,6 +26,7 @@ def generate_zero_paths(
     from infretis.classes.repex import REPEX_state
     from infretis.classes.system import System
     from infretis.setup import setup_config
+
 
     # make a directory we work from
     tmp_dir = pl.Path("temporary_load/")
@@ -167,6 +166,9 @@ def infinit(
     log: Annotated[str, typer.Option("-log", help="File for logging output")] = "infretis_init.log",
     ):
     """The infretis initial path generator."""
+
+    from inftools.exercises.puckering import initial_path_from_iretis
+
     # Based on the YouTube series:
     # https://www.youtube.com/watch?v=mW9tC2A7COs&list=PL5dSi5eZMe1iN_Uz8pTph6i8AGXhVUZIj&index=24
 
@@ -229,6 +231,7 @@ def infinit(
     if not pl.Path("infretis.toml").exists():
         print("Writing infretis.toml")
         c0 = read_toml(toml)
+        c0["infinit"] = iset
         write_toml(c0, "infretis.toml")
     print_logo(step = -1)
     for iretis_steps in iset["steps_per_iter"][iset["cstep"]:]:
@@ -251,3 +254,5 @@ def infinit(
         out = initial_path_from_iretis("load", "infretis.toml", restart = "restart.toml", active_path_dir=f"load", return_pathnr = True)
         # update infretis.toml to be a restart.toml
         update_actives_toml(out)
+        # rename restart file
+        rename_file("restart.toml", f"restart_{iset['cstep']-1}.toml")

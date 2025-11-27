@@ -3,7 +3,7 @@ from enum import Enum
 import typer
 
 # Disable automatic underscore -> hyphen in CLI names
-typer.main.get_command_name = lambda name: name
+# typer.main.get_command_name = lambda name: name
 
 # for Choices CLI parameter
 class Format(str, Enum):

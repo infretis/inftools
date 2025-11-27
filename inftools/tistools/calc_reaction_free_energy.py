@@ -1,8 +1,5 @@
 from typing import Annotated, Optional
 import typer
-import numpy as np
-from pathlib import Path
-from inftools.misc.free_help import recursive_simpson, plot_FE
 
 def calc_reaction_free_energy(
     wham1: Annotated[str, typer.Option("-wham1", help="The wham folder of the A->B reaction")],
@@ -18,6 +15,9 @@ def calc_reaction_free_energy(
     merge the two conditional free energies into the actual free energy.
     The binning of the two free energies should be the same.
     """
+    from pathlib import Path
+    import numpy as np
+    from inftools.misc.free_help import recursive_simpson, plot_FE
 
     assert not (fn_out is None and plot is None), "Please provide out and/or plot arguments"
     if out_unit != 1.0 and out_unit_name == "k_B*T":

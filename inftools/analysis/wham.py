@@ -1,13 +1,11 @@
 from typing import Annotated as Atd
 import typer
 from typer import Option as Opt
+import importlib
 
-import os
+import importlib.util
 
-import tomli
-
-from inftools.analysis.Wham_Pcross import run_analysis
-
+import sys
 
 def wham(
     toml: Atd[str, Opt("-toml", help="The infretis .toml file")] = "infretis.toml",
@@ -27,7 +25,9 @@ def wham(
     ycol: Atd[int, Opt("-ycol", help="Same as -xcol but for y-value")] = None,
     ):
     """Run Titus0 wham script."""
-
+    import os
+    import tomli
+    from inftools.analysis.Wham_Pcross import run_analysis
 
     inps = {
         "toml": toml,
@@ -40,8 +40,9 @@ def wham(
         "histo_stuff":{
             "nbx":nbx, "minx":minx, "maxx":maxx, "xcol":xcol,
             "nby":nby, "miny":miny, "maxy":maxy, "ycol":ycol,
-            }
+        }
     }
+
     # load input:
     if os.path.isfile(inps["toml"]):
         with open(inps["toml"], mode="rb") as read:

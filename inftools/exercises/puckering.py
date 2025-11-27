@@ -12,17 +12,15 @@ import subprocess
 from types import SimpleNamespace
 import pathlib
 
-import numpy as np
-import tomli
-import tomli_w
-from infretis.classes.orderparameter import Puckering
-
 
 def check_indices(
         sdf: Annotated[str, typer.Option("-sdf", help="The .sdf file of your molecule (e.g. mol.sdf)")],
         idx: Annotated[Tuple[int, int, int, int, int, int], typer.Option("-idx", help="The ordered indices of your molecule (e.g. 2 5 11 8 1 0)")],
     ):
     """Calculate the theta and phi angle for an .sdf file given a set of indices."""
+
+    from infretis.classes.orderparameter import Puckering
+    import numpy as np
 
     orderparameter = Puckering(index=idx)
 
@@ -48,6 +46,8 @@ def concatenate(
     import MDAnalysis as mda
     from MDAnalysis.analysis.align import alignto
     from MDAnalysis.lib.mdamath import make_whole
+    import numpy as np
+
 
     # parser.add_argument(
     #     "--selection",
@@ -171,6 +171,10 @@ def initial_path_from_iretis(
         * Check that selected paths are actually valid wf paths using infretis
         functions
     """
+    import tomli
+    import tomli_w
+    import numpy as np
+
     out_dir = pathlib.Path(out_dir)
     toml = pathlib.Path(toml)
     if not active_path_dir:
@@ -372,6 +376,9 @@ def initial_path_from_md(
         order: Annotated[str, typer.Option("-order", help="The order file corresponding to the trajectory")],
         ):
     "Generate initial paths for an infretis simulation from an equilibrium run."
+    import tomli
+    import numpy as np
+
 
     predir = "load"
     if os.path.exists(predir):
@@ -500,7 +507,10 @@ def plot_order(
         skip: Annotated[bool, typer.Option("-skip" , help="skip initial load paths")] = False,
     ):
     "Plot the order parameter of all paths from an infretis simulation."
+    import tomli
     import matplotlib.pyplot as plt
+    import numpy as np
+
     # read interfaces from the .toml file
     with open(toml, "rb") as toml_file:
         toml_dict = tomli.load(toml_file)
