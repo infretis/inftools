@@ -229,6 +229,26 @@ def update_toml_interfaces(config):
     elif len(intf_tmp) < len(intf)-2:
         print(f"* Rounding interfaces to lamres, there are now {len(intf_tmp)+1} plus ensembles, and not {num_ens}")
 
+    # if some of the interfaces land on lambda A or B, try to shift them with lamres
+    # or remove the interface if even that results in duplicates
+    if intf[0] in intf_tmp:
+        idx = intf_tmp.index(intf[0])
+        if intf_tmp[idx] + lamres not in intf_tmp:
+            intf_tmp[idx] = intf_tmp[idx] + lamres
+            print("* Shifting intfs[1] because it would land on intf A")
+        else:
+            print("* Removing an interface because it landed on intf A")
+            intf_tmp.pop(idx)
+
+    if intf[-1] in intf_tmp:
+        idx = intf_tmp.index(intf[-1])
+        if intf_tmp[idx] - lamres not in intf_tmp:
+            intf_tmp[idx] = intf_tmp[idx] - lamres
+            print("* Shifting intfs[-2] because it would land on intf B")
+        else:
+            print("* Removing an interface because it landed on intf B")
+            intf_tmp.pop(idx)
+
     config["simulation"]["interfaces"] =intf[:1] +  intf_tmp + intf[-1:]
     config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
