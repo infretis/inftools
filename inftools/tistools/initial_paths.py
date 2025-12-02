@@ -255,4 +255,4 @@ def infinit(
         # update infretis.toml to be a restart.toml
         update_actives_toml(out)
         # rename restart file
-        rename_file("restart.toml", f"restart_{iset['cstep']-1}.toml")
+        rename_file("restart.toml", f"restart_{iset['cstep']}.toml")
