@@ -241,17 +241,18 @@ def infinit(
             print(f" *** infinit exiting loop at cstep={iset['cstep']}")
             return 1
         log.log("Updating interfaces.")
-        # print(config)
         update_toml_interfaces(config)
         msg = "interfaces = ["
         msg += ", ".join([str(intf) for intf in config["simulation"]["interfaces"]])
         msg += "]"
         log.log(msg)
-        #log.log("Moving and writing files.")
-        #has_load = update_folders()
         iset["cstep"] += 1
         update_toml(config)
-        out = initial_path_from_iretis("load", "infretis.toml", restart = "restart.toml", active_path_dir=f"load", return_pathnr = True)
+        out = initial_path_from_iretis(
+                config["simulation"].get("load_dir", "load"),
+                "infretis.toml",
+                restart = "restart.toml",
+                return_pathnr = True)
         # update infretis.toml to be a restart.toml
         update_actives_toml(out)
         # rename restart file
