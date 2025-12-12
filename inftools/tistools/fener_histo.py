@@ -15,5 +15,5 @@ def plot_hist(
     x = np.loadtxt(xval)
     y = np.loadtxt(yval)
     h = np.loadtxt(hist)
-    plt.pcolormesh(x, y, h)
+    plt.pcolormesh(x, y, h.T)
     plt.show()
