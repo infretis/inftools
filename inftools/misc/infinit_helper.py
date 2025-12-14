@@ -218,6 +218,9 @@ def update_toml_interfaces(config):
     intf = list(interfaces) + config["simulation"]["interfaces"][-1:]
     # round interfaces to lambda resolution, and avoid precision errors
     lamres = config["infinit"]["lamres"]
+    # avoid rounding errors in last ensembles causing maxop path to be non-valid
+    if intf[-2] + lamres >= x[-1]:
+        intf[-2] = x[-1] - lamres
     intf_tmp = np.round(np.round(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
     # remove duplicates if any appear due to rounding of interfaces
     intf_tmp = list(np.unique(intf_tmp))
