@@ -5,7 +5,9 @@ def run_analysis(inp_dic):
     from inftools.analysis.rec_error import rec_block_errors
     from inftools.analysis.toolsWHAM import PcrossWHAM2, get_WHAMfactors
     from inftools.analysis.Free_energy import calculate_free_energy
+    from inftools.analysis.pcross_plot import plot_combined_pcross
 
+    
     CalcFE = inp_dic["fener"]
     ifile = inp_dic["data"]
     lambda_interfaces = [float(i) for i in inp_dic["intfs"]]
@@ -15,6 +17,10 @@ def run_analysis(inp_dic):
     folder = inp_dic["folder"]
     histo_stuff = inp_dic["histo_stuff"]
     lm1 = inp_dic["lm1"]
+    sym = inp_dic["sym"]
+    z_min = inp_dic["zmin"]
+    z_max = inp_dic["zmax"]
+    timeunit = inp_dic["timestep"] * inp_dic["subcycle"] * 1e-15 # fs to sec
 
     # the Cxy values of [0+] are stored in the i0plus-th
     # column (first coulumn is counted as column nr 0)
@@ -839,15 +845,267 @@ def run_analysis(inp_dic):
             file.write("\n")
     print(f"Error Analysis for rate written to {filename}")
 
-    # Calculate Landau Free energy?
+    ##################################################
+    # Generate nice plots
+    plot_combined_pcross(folder)
+    
+    ##################################################
+    # collect some data for lm1 analysis and/or permeability analysis if requested
+    # ---------------------------------------
+    WHAMfactorsMIN = [x[i0min] for x in matrix]
+    sumWM = sum(WHAMfactorsMIN)
+    WHAMfactorsMIN = [val / sumWM for val in WHAMfactorsMIN]
+    # "Semi"-WHAM factors for the [0^-] ensemble
+    WFtot = [a + b for a, b in zip(WHAMfactorsMIN, WHAMfactors)]
+    trajlabels = [int(x[0]) for x in matrix]
+    
+    # running averages for lm1 correction and/or permeability analysis
+    #---------------------------------------
+    runav_L0min = np.asarray(runav_L0min)
+    runav_L0plus = np.asarray(runav_L0plus)
+    run_av_PtotWHAM = np.asarray(run_av_PtotWHAM)
+
+    runav_xi = np.zeros(len(trajlabels))   
+    runav_tau_ref = np.zeros(len(trajlabels))
+
+    path_0_min_list = []
+    w_0_min_list = []
+    path_0_plus_list = []
+    w_0_plus_list = []
+
+    count_0_min_paths_sum = 0
+    count_0_min_paths_sum_array = np.zeros(len(trajlabels), dtype=int)
+    DeltaZ_phasepoints_sum = 0
+    DeltaZ_phasepoints_sum_array = np.zeros(len(trajlabels), dtype=int)
+    type_count = {"RMR": 0,"RML": 0,"LML": 0,"LMR": 0,"0+": 0}
+
+    # count and collect
+    # Due to this counting it is currently not possible to just perform wham on a data file as it requires the order.txt files
+    for i, (label, factor) in enumerate(zip(trajlabels, WFtot)):
+        trajfile = inp_dic["trajdir"] + "/" + str(label) + "/order.txt"
+        type, DeltaZ_phasepoints = extract_pathtype_and_tau_ref(trajfile, lm1, lambda_interfaces[0], histo_stuff["xcol"], z_min, z_max)
+        # for tau_ref calculation
+        DeltaZ_phasepoints_sum += DeltaZ_phasepoints
+        DeltaZ_phasepoints_sum_array[i] = DeltaZ_phasepoints_sum
+        # when 0- path
+        if type != "0+":
+            count_0_min_paths_sum += 1    # counting number of 0- paths
+            path_0_min_list.append(label)   # collect labels of 0- paths
+            w_0_min_list.append(factor)   # collect weights of 0- paths
+        # when 0+ path
+        else:
+            path_0_plus_list.append(label)  # collect labels of 0+ paths
+            w_0_plus_list.append(factor)   # collect weights of 0+ paths
+        count_0_min_paths_sum_array[i] = count_0_min_paths_sum
+        runav_tau_ref[i] = (DeltaZ_phasepoints_sum / count_0_min_paths_sum if count_0_min_paths_sum != 0 else 0)
+
+        # for xi calculation, running average
+        # update the total weight of this path type
+        type_count[type] += factor
+        # update the running average of xi
+        R_END = type_count["LMR"] + type_count["RMR"]
+        L_END = type_count["LML"] + type_count["RML"]
+        runav_xi[i] = (float('nan') if (R_END + L_END) == 0 else R_END / (R_END + L_END))
+
+    # write path weights of 0- and 0+ paths
+    #---------------------------------------
+    filename = os.path.join(folder, "pathweights_0_min.txt")
+    with open(filename, "w") as file:
+        # print sum of all weights of 0- paths
+        file.write("#path_label, weight, sum_weight: " + str({sum(w_0_min_list)}) +"\n")
+        for path_label, weight in zip(path_0_min_list, w_0_min_list):
+            # print individual path label and weight
+            file.write(f"{path_label}   {weight:15.6e}\n")
+    
+    filename = os.path.join(folder, "pathweights_0_plus.txt")
+    with open(filename, "w") as file:
+        # print sum of all weights of 0+ paths
+        file.write("#path_label, weight, sum_weight: " + str({sum(w_0_plus_list)}) +"\n")
+        for path_label, weight in zip(path_0_plus_list, w_0_plus_list):
+            # print individual path label and weight
+            file.write(f"{path_label}   {weight:15.6e}\n")
+    
+
+    if lm1 is not None:   # lm1 is float or None. TODO check if this works correctly
+        # write running averages of flux, rate with lm1 correction
+        #-------------------------------------------------------
+        # Note: meaning of this flux and this rate depends on position of lambda_-1 interface,
+        # so do not interprete this 'rate' or 'flux' too literally.
+
+        # flux:
+        # flux = 1 / ( <L0-> -2 + <L0+> -2 )         # when there is no lambda_-1
+        # flux = xi / ( <L0-> -2 + xi*(<L0+> -2) )   # when there is a lambda_-1, Eq. 29 in Phys. Rev. Res. 3, 033068 (2021)
+        # unit: phasepoints^-1
+        runav_flux_lm1 = runav_xi / ((runav_L0min - 2) + runav_xi * (runav_L0plus - 2))
+
+        # rate:
+        # rate = flux * Pcross
+        # timeunit: in s
+        runav_rate_lm1 = runav_flux_lm1 * run_av_PtotWHAM   # unit: phasepoint
+
+        # write to file
+        filename = os.path.join(folder, "runav_xi_flux_rate_lm1.txt")
+        with open(filename, "w") as file:
+            file.write("#counter, xi, flux, rate\n")
+            for counter, (y1, y2, y3) in enumerate(zip(runav_xi, runav_flux_lm1, runav_rate_lm1)):
+                file.write(f"{counter:6d} ")
+                file.write(f"{y1:15.6e} ")
+                file.write(f"{y2:15.6e} ")
+                file.write(f"{y3:15.6e}\n")
+        print("Running averages of xi flux rate permeability with lm1_corrected written to: ", filename)
+        print(f"0 minus path count: {count_0_min_paths_sum}")
+
+        if False:
+            runav_flux_lm1_sec = runav_flux_lm1 / timeunit   # convert flux to 1/s
+            runav_rate_lm1_sec = runav_rate_lm1 / timeunit   # convert rate to 1/s
+
+        err_xi, _, blockerrs_xi = rec_block_errors(runav_xi, minblocks)
+        err_flux_lm1, _, blockerrs_flux_lm1 = rec_block_errors(runav_flux_lm1, minblocks)
+        err_rate_lm1, _, blockerrs_rate_lm1 = rec_block_errors(runav_rate_lm1, minblocks)
+        filename = os.path.join(folder, "err_xi_flux_rate_lm1.txt")
+        with open(filename, "w") as file:
+            file.write("#averaged rel-error: xi, flux, rate: " + str([err_xi, err_flux_lm1, err_rate_lm1]) + "\n")
+            file.write("#block-length, rel-error: xi, flux, rate\n")
+            for counter, (y1, y2, y3) in enumerate(zip(blockerrs_xi, blockerrs_flux_lm1, blockerrs_rate_lm1)):
+                file.write(f"{counter+1:6d} ")
+                file.write(f"{y1:15.6e} ")
+                file.write(f"{y2:15.6e} ")
+                file.write(f"{y3:15.6e}\n")
+        print(f"Error Analysis for xi flux rate with lm1 corrected written to {filename}")
+
+
+    if z_min != None or z_max != None:
+        # write permeability
+        #---------------------------------------
+
+        # runav_tau_ref contains integers (number of phasepoints)
+        DeltaZ = z_max - z_min   # in units of 'order parameter', e.g. angstrom or nanometer
+        print(f"DeltaZ used in permeability calculation: {DeltaZ} [unit order parameter]")
+
+        # compute permeability with lm1 correction
+        # perm = xi * DeltaZ / tau_ref * Pcross  # Eq. 30 in Phys. Rev. Res. 3, 033068 (2021)
+        # perm = prefactor * Pcross
+        # where prefactor = xi * DeltaZ / tau_ref    
+        # unit: [unit order parameter] / [phasepoints]
+        runav_perm_prefactor = np.where(runav_tau_ref != 0, runav_xi * DeltaZ 
+                                            / runav_tau_ref, np.nan)
+    
+        runav_perm = np.where(runav_tau_ref != 0, runav_xi * DeltaZ * run_av_PtotWHAM
+                                    / runav_tau_ref, np.nan)
+
+        # write to file:
+        filename = os.path.join(folder, "runav_permeability.txt")
+        with open(filename, "w") as file:
+            file.write("#counter, xi, 0_minus_path_count, phasepoints_in_DeltaZ, tau_ref (phasepoints), permeability_prefactor (OP/phasepoints), permeability (OP/phasepoints)\n")
+            for counter, (y1, y2, y3, y4, y5, y6) in enumerate(zip(runav_xi, count_0_min_paths_sum_array, 
+                                                                    DeltaZ_phasepoints_sum_array, runav_tau_ref,
+                                                                    runav_perm_prefactor, runav_perm)):
+                file.write(f"{counter:6d} ")
+                file.write(f"{y1:15.6e} ")
+                file.write(f"{y2:6d} ")
+                file.write(f"{y3:6d} ")
+                file.write(f"{y4:15.6e} ")
+                file.write(f"{y5:15.6e} ")
+                file.write(f"{y6:15.6e}\n")
+        print("Running average of permeability with lm1 corrected version written to: ", filename)
+
+        if True:
+            # write permeability in units of cm/s
+            #---------------------------------------
+            print(f"WARNING: here we assume that DeltaZ is in units of angstrom!")
+            print(f"CHECK! Timeunit (timestep*subcycles) is {timeunit} s.")
+            # compute permeability with lm1 correction
+            # we convert everything to unit cm/s
+
+            # (1) runav_tau_ref contains integers (number of phasepoints)
+            #     multiply by timeunit to convert to seconds
+            # (2) convert length to cm
+            # WARNING: here we assume that DeltaZ is in units of angstrom!
+            DeltaZ = z_max - z_min
+            convert_angstrom_to_cm = 1e-8  # angstrom to cm
+
+            # perm = xi * DeltaZ / tau_ref * Pcross  # unit cm/s, Eq. 30 in Phys. Rev. Res. 3, 033068 (2021)
+            # perm = prefactor * Pcross
+            # where prefactor = xi * DeltaZ / tau_ref  # unit cm/s
+        
+            runav_perm_prefactor1 = runav_perm_prefactor * convert_angstrom_to_cm / timeunit
+            runav_perm1 = runav_perm * convert_angstrom_to_cm / timeunit
+
+            # write to file:
+            filename = os.path.join(folder, "runav_permeability_units.txt")
+            with open(filename, "w") as file:
+                file.write("#WARNING: It was assumed here that the OP is in units of angstrom!\n")
+                file.write("#counter, xi, 0_minus_path_count, phasepoints_in_DeltaZ, tau_ref (s), permeability_factor (cm/s), permeability (cm/s)\n")
+                for counter, (y1, y2, y3, y4, y5, y6) in enumerate(zip(runav_xi, count_0_min_paths_sum_array, 
+                                                                        DeltaZ_phasepoints_sum_array, runav_tau_ref*timeunit,
+                                                                        runav_perm_prefactor1, runav_perm1)):
+                    file.write(f"{counter:6d} ")
+                    file.write(f"{y1:15.6e} ")
+                    file.write(f"{y2:6d} ")
+                    file.write(f"{y3:6d} ")
+                    file.write(f"{y4:15.6e} ")
+                    file.write(f"{y5:15.6e} ")
+                    file.write(f"{y6:15.6e}\n")
+            print("Running average of permeability with lm1 corrected version written to: ", filename)
+
+
+        err_perm, _, blockerrs_perm = rec_block_errors(runav_perm, minblocks)
+        filename = os.path.join(folder, "err_permeability.txt")
+        with open(filename, "w") as file:
+            file.write("#averaged rel-error permeability: " + str([err_perm]) + "\n")
+            file.write("#block-length, rel-error permeability\n")
+            for counter, y1 in enumerate(blockerrs_perm):
+                file.write(f"{counter+1:6d} ")
+                file.write(f"{y1:15.6e}\n")
+        print(f"Error Analysis for permeability written to {filename}")
+
+
+    ##################################################
+    # Calculate Landau Free energy
+    ##################################################
+
+    # conditional free energy
+
+    # Xi used in FE calculation to correct for "cutting" the paths in the histogram between lambda -1 and lambda A with xi
+    xi_best_estimate = runav_xi[-1]
+    #xi_best_estimate = None   # TODO is this needed/possible in calculate_free_energy function? maybe be deleted
+
+    
     if "CalcFE" in locals() and CalcFE:
-        WHAMfactorsMIN = [x[i0min] for x in matrix]
-        sumWM = sum(WHAMfactorsMIN)
-        WHAMfactorsMIN = [val / sumWM for val in WHAMfactorsMIN]
-        # "Semi"-WHAM factors for the [0^-] ensemble
-        WFtot = [a + b for a, b in zip(WHAMfactorsMIN, WHAMfactors)]
-        trajlabels = [int(x[0]) for x in matrix]
+        calculate_free_energy(trajlabels, WFtot, inp_dic["trajdir"], folder, histo_stuff, lm1, lambda_interfaces[0], 
+                                lambda_interfaces[-1], xi_best_estimate, sym)
 
-        calculate_free_energy(trajlabels, WFtot, inp_dic["trajdir"], folder, histo_stuff)
 
-    # Finished!
+def extract_pathtype_and_tau_ref(trajfile, lm1, lA, xcol, z_min=None, z_max=None):
+    """Function to extract path type and tau_ref in given interval from a trajectory file.
+    Works for well-behaved paths only.
+    Parameters:
+        trajfile : str, Path to the trajectory file.
+        lm1 : float, lambda_-1
+        lA : float, lambda_A
+        xcol : int, Column index for the reaction coordinate in the trajectory file.
+        z_min : float, Optional, interval for tau_ref calculation.
+        z_max : float, Optional, interval for tau_ref calculation."""
+    traj = np.loadtxt(trajfile)
+    first = traj[0, xcol]
+    second = traj[1, xcol]
+    last = traj[-1, xcol]
+    # determine path type
+    if first >= lA and last >= lA and second < first:
+        type = "RMR"
+    elif first >= lA and last <= lm1:
+        type = "RML"
+    elif first <= lm1 and last <= lm1:
+        type = "LML"
+    elif first <= lm1 and last >= lA:
+        type = "LMR"
+    else:
+        type = "0+"
+
+    # detect how many points are in the reference interval
+    if type != "0+" and z_min is not None and z_max is not None:
+        # in number of phasepoints
+        tau_ref = np.sum(((traj[:,xcol]) > z_min) & ((traj[:,xcol]) < z_max))
+    else:
+        tau_ref = 0
+    return type, tau_ref
