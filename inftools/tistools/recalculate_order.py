@@ -5,20 +5,12 @@ import typer
 # Disable automatic underscore -> hyphen in CLI names
 # typer.main.get_command_name = lambda name: name
 
-# for Choices CLI parameter
-class Format(str, Enum):
-    ONE = "trr"
-    TWO = "xyz"
-    THR = "traj"
-    FOU = "rkf"
-
-
-
 def recalculate_order(
     toml: Annotated[str, typer.Option("-toml")] = "infretis.toml",
     traj: Annotated[str, typer.Option("-traj")] = "traj.xyz",
     out: Annotated[str, typer.Option("-out", help="the output of the analysis")] = "order_rec.txt",
     format: Annotated[str, typer.Option("-format", case_sensitive=False, help="the file format of the trajectory (.traj is ase format)")]= "trr",
+    top: Annotated[str, typer.Option("-top", help = "topology information, required for some formats")] = "",
     box: Annotated[Tuple[float, float, float], typer.Option("-box", help="xyz only; box dimensions in angstrom (e.g. 30 30 30)")] = None,
     ):
     """
@@ -73,7 +65,10 @@ def recalculate_order(
         traj.store_mddata()
         mol = traj.get_plamsmol()
     else:
-        u = mda.Universe(traj, format = format)
+        if top:
+            u = mda.Universe(top, traj, format = format)
+        else:
+            u = mda.Universe(traj, format = format)
         traj = u.trajectory
 
 
