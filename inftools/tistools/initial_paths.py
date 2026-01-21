@@ -28,17 +28,16 @@ def generate_zero_paths(
     from infretis.setup import setup_config
 
 
+    config0 = read_toml(toml)
+
     # make a directory we work from
     tmp_dir = pl.Path("temporary_load/")
     tmp_dir.mkdir(exist_ok = False)
-    load_dir = pl.Path("load/")
+    load_dir = pl.Path(config0["simulation"].get("load_dir", "load"))
     load_dir.mkdir(exist_ok = False)
 
     initial_configuration = conf
 
-    # maximal length of initial paths
-
-    config0 = read_toml(toml)
     config0["runner"]["workers"] = 1
     write_toml(config0, "zero_paths.toml")
     # infretis parameters
@@ -118,7 +117,7 @@ def generate_zero_paths(
         path1r, state.ensembles[1], path1.phasepoints[0], reverse=True
     )
 
-    print("Done! Making load/ dir")
+    print(f"Done! Making {load_dir} dir")
     # make load directories
     pathsf = [path0, path1]
     pathsr = [path0r, path1r]
@@ -156,8 +155,9 @@ def generate_zero_paths(
         for trajfile in np.unique(
             [pp.config[0].split("/")[-1] for pp in path.phasepoints]
         ):
-            traj_path = tmp_dir / trajfile
-            traj_path.rename(accepted / trajfile)
+            src_path = tmp_dir / trajfile
+            dest_path = accepted / trajfile
+            shutil.move(src_path, dest_path)
     return max_op
 
 
@@ -214,7 +214,7 @@ def infinit(
         sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
 
         # create symlink to load/1 path Nworker-1 times
-        load_dir = pl.Path("load")
+        load_dir = pl.Path(config["simulation"].get("load_dir", "load"))
         load0 = load_dir / "1"
         for i in range(1,nworkers):
             loadn = load_dir / str(i + 1)
