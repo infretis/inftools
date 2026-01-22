@@ -5,6 +5,8 @@ def recalculate_traj(
     path: Annotated[str, typer.Option("-path", help="path to the path's path number, usually in load/{pn}")] ,
     toml: Annotated[str, typer.Option("-toml")] = "infretis.toml",
     out: Annotated[str, typer.Option("-out", help="the output of the analysis")] = "order_rec.txt",
+    top: Annotated[str, typer.Option("-top", help="topology file passed to mdanalysis")] = "",
+    mda_format: Annotated[str, typer.Option("-format", help = "The format of the trajectory file (e.g. 'xyz', 'xtc', 'trr')")] = "",
     ):
     """
     Recalculate the orderparamter from a sampled infretis path.
@@ -28,8 +30,14 @@ def recalculate_traj(
     tdata = np.loadtxt(os.path.join(path, "traj.txt"), dtype=str)
     files = set(tdata[:, 1])
 
-    # assume all trajs are mda readable 
-    unis = {i:mda.Universe(os.path.join(path, "accepted", i)) for i in files}
+    if not mda_format:
+        mda_format = list(files)[0].split(".")[-1]
+        print(f"Assuming '{mda_format}' trajectory format based on extension.")
+
+    if not top:
+        unis = {i:mda.Universe(os.path.join(path, "accepted", i), format = mda_format) for i in files}
+    else:
+        unis = {i:mda.Universe(top, os.path.join(path, "accepted", i), format = mda_format) for i in files}
 
     # for cp2k: assume no NPT is ran with cp2k, st. default box is set for all
     if "xyz" in [i.split('.')[-1] for i in files]:
@@ -38,14 +46,14 @@ def recalculate_traj(
         box, pbc = read_cp2k_box(cp2k_inp)
         for uni in unis.values():
             uni.dimensions = list(box) + [90]*3
-    
+
     # write to new file
     out_file = os.path.join(path, out)
     for i in range(1, 1000):
         if not os.path.isfile(out_file):
             break
         out_file = os.path.join(path, f"order_rec_{i}.txt")
-        
+
     with open(out_file, "w") as writefile:
         writefile.write("# step\torder\n")
         for step, fname, index, vel in tdata:
