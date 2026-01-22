@@ -35,10 +35,9 @@ def recalculate_traj(
         print(f"Assuming '{mda_format}' trajectory format based on extension.")
 
     if not top:
-        top = None
-
-    # assume all trajs are mda readable
-    unis = {i:mda.Universe(top, os.path.join(path, "accepted", i), format = mda_format) for i in files}
+        unis = {i:mda.Universe(os.path.join(path, "accepted", i), format = mda_format) for i in files}
+    else:
+        unis = {i:mda.Universe(top, os.path.join(path, "accepted", i), format = mda_format) for i in files}
 
     # for cp2k: assume no NPT is ran with cp2k, st. default box is set for all
     if "xyz" in [i.split('.')[-1] for i in files]:
