@@ -1,9 +1,38 @@
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+import tarfile
+import io
 
-def extract(trajfile, xcol, ycol=None):
+
+def build_member_map(tarfile_path, suffix="order.txt"):
+    """
+    Returns dict: 'label/order.txt' -> TarInfo
+    """
+    with tarfile.open(tarfile_path, "r") as tf:
+        members = [
+            m for m in tf.getmembers()
+            if m.isfile() and m.name.endswith(f"/{suffix}")
+        ]
+
+    member_map = {}
+    for m in members:
+        rel = "load/" + "/".join(m.name.split("/")[-2:])  # label/order.txt
+        member_map[rel] = m
+
+    return member_map
+
+
+def extract(trajfile, xcol, ycol=None, member_map={}):
     # Read and process the file
-    traj = np.loadtxt(trajfile)
+    if not member_map:
+        traj = np.loadtxt(trajfile)
+    else:
+        m = member_map[trajfile]
+        with tarfile.open("infretis_data.tar", "r") as tf:
+            with tf.extractfile(m) as fh:
+                traj = np.loadtxt(io.TextIOWrapper(fh))
+
     data = traj[1:-1, xcol] # remove first and last frames
     if ycol is not None:
         data = np.vstack((data, traj[1:-1, ycol]))
@@ -53,9 +82,14 @@ def calculate_free_energy(trajlabels, WFtot, Trajdir, outfolder, histo_stuff, in
     dx = (Maxx - Minx) / Nbinsx
     xval = [Minx + 0.5 * dx + i * dx for i in range(Nbinsx)]
 
+    member_map = {}
+    tarfile_path = "infretis_data.tar"
+    if os.path.exists(tarfile_path):
+        member_map = build_member_map(tarfile_path)
+
     for label, factor in zip(trajlabels, WFtot):
         trajfile = Trajdir + "/" + str(label) + "/order.txt"
-        data = extract(trajfile, xcol, ycol)
+        data = extract(trajfile, xcol, ycol, member_map)
         data0 = np.loadtxt(trajfile)
         histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
 

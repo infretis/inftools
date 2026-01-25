@@ -6,9 +6,9 @@ def recursive_simpson(data, axes):
     from scipy.integrate import simpson
     assert data.ndim == len(axes)
     if data.ndim == 1:
-        return simpson(data, axes[0])
+        return simpson(data, x=axes[0])
     else:
-        integ = simpson(data, axes[-1], axis=-1)
+        integ = simpson(data, x=axes[-1], axis=-1)
         return recursive_simpson(integ, axes[:-1])
 
 
