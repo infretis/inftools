@@ -81,7 +81,7 @@ def get_path_weights(
     for j, pathnr in enumerate(D["pnr"][:, 0]):
         # unbiased weight of each path
         K = min(
-            np.where(D["maxop"][j] > interfaces)[0][-1], len(interfaces) - 2
+            np.where(D["maxop"][j] >= interfaces)[0][-1], len(interfaces) - 2
         )
         A[j] = Q[K] * np.sum(w[j])
 
