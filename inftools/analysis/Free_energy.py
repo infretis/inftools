@@ -1,5 +1,7 @@
 import os
 import numpy as np
+import tqdm
+import h5py
 
 def extract(trajfile, xcol, ycol=None):
     # Read and process the file
@@ -50,10 +52,23 @@ def calculate_free_energy(trajlabels, WFtot, Trajdir, outfolder, histo_stuff):
     dx = (Maxx - Minx) / Nbinsx
     xval = [Minx + 0.5 * dx + i * dx for i in range(Nbinsx)]
 
-    for label, factor in zip(trajlabels, WFtot):
-        trajfile = Trajdir + "/" + str(label) + "/order.txt"
-        data = extract(trajfile, xcol, ycol)
-        histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
+    if os.path.exists("order.h5"):
+        print("Using order.h5 for whamming")
+        with h5py.File("order.h5", "r") as h5f:
+            for label, factor in tqdm.tqdm(zip(trajlabels, WFtot)):
+                data = h5f[f"arrays/{label:06d}"]
+                if ycol is not None:
+                    data = data[1:-1,[xcol,ycol]].T
+                else:
+                    data = data[1:-1, xcol]
+
+                histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
+    else:
+        for label, factor in zip(trajlabels, WFtot):
+            trajfile = Trajdir + "/" + str(label) + "/order.txt"
+            data = extract(trajfile, xcol, ycol)
+            histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
+
 
     # normalize such that the highest value equals 1
     max_value = np.max(histogram)
