@@ -98,4 +98,4 @@ def pcross_errors(
         f.tight_layout()
         plt.show()
     else:
-        return Pcross, errs
+        return dlambda, Pcross, errs
