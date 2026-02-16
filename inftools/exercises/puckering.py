@@ -538,22 +538,37 @@ def plot_order(
     # plot all paths, modify by your needs
     if skip:
         sorted_paths = sorted_paths[len(interfaces):]
+    react_x, react_y = [], []
+    ureact_x, ureact_y = [], []
     for path in sorted_paths:
         x = np.loadtxt(path)
         if x.shape[1] > 2:
-           if x[-1, 1] > interfaces[-1]:
+            if x[-1, 1] > interfaces[-1]:
                 print(
                     f"The path in {path} is reactive with \
         phi={x[-1,2]:.2f}! \U0001F389 \U0001F938 \U0001F483"
                 )
-           #    continue # continues to next iteration in loop
-        a.plot(
-            x[:, xy[0]],
-            x[:, xy[1]],
-            c="C0",
-            marker="o",
-            markersize=2.5,
-            lw=lw,
-        )
+                #    continue # continues to next iteration in loop
+                react_x += list(x[:, xy[0]]) + [None]
+                react_y += list(x[:, xy[1]]) + [None]
+                continue
+        ureact_x += list(x[:, xy[0]]) + [None]
+        ureact_y += list(x[:, xy[1]]) + [None]
+    a.plot(
+        react_x,
+        react_y,
+        c="C1",
+        marker="o",
+        markersize=2.5,
+        lw=lw,
+    )
+    a.plot(
+        ureact_x,
+        ureact_y,
+        c="C0",
+        marker="o",
+        markersize=2.5,
+        lw=lw,
+    )
 
     plt.show()
