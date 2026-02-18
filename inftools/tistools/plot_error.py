@@ -16,6 +16,8 @@ def plot_error(
 
     from inftools.misc.calc_help import estimate_error
 
+    # plot the rate related errors in one fig
+    # and the individual ensemble plocs in the other
     fig, axs = plt.subplots(1, 2, figsize=(10,4))
 
     err_files0 = ["errFLUX.txt", "errPtot.txt", "errRATE.txt"]
@@ -24,6 +26,7 @@ def plot_error(
         path = os.path.join(wham,file)
         err_files.append(path)
 
+    # plots the errFLUX, errPtot, errRATE
     for idx, err_file in enumerate(err_files):
         edata = np.loadtxt(err_file)
         err = estimate_error(edata[:, -1], frac)
@@ -32,6 +35,7 @@ def plot_error(
         axs[0].plot(edata[:, 0], edata[:, -1], color=f"C{idx}", label=f"{err_files0[idx][:-4]} | {err:.04f}")
         axs[0].axhline(err, color=f"C{idx}")
 
+    # plot errploc
     edata = np.loadtxt(os.path.join(wham, "errploc.txt"))
     for idx, ens in enumerate(edata.T[1:]):
         err = estimate_error(ens, frac)
