@@ -25,13 +25,10 @@ def store_txt(
         import h5py
 
     filename = pathlib.Path(name).with_suffix('.h5')
-    # if os.path.exists(filename):
-    #     print(f"{name} already exists!")
-    #     return 
 
     path = pathlib.Path(load)
     types = [
-        (order, "order.txt"), 
+        (order, "order.txt"),
         (energy, "energy.txt"),
         (traj, "traj.txt")
     ]
