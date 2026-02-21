@@ -34,7 +34,7 @@ def calculate_free_energy(trajlabels, WFtot, Trajdir, outfolder, histo_stuff):
     Maxx, Minx = histo_stuff["maxx"], histo_stuff["minx"]
     Maxy, Miny = histo_stuff["maxy"], histo_stuff["miny"]
     xcol, ycol = histo_stuff["xcol"], histo_stuff["ycol"]
-    
+
     if any(var is None for var in [Nbinsy, Maxy, Miny, ycol]):
         none_vars = [name for name, var in zip(["nby", "maxy", "miny", "ycol"], [Nbinsy, Maxy, Miny, ycol]) if var is None]
         assert all(var is None for var in [Nbinsy, Maxy, Miny, ycol]), \
@@ -50,10 +50,22 @@ def calculate_free_energy(trajlabels, WFtot, Trajdir, outfolder, histo_stuff):
     dx = (Maxx - Minx) / Nbinsx
     xval = [Minx + 0.5 * dx + i * dx for i in range(Nbinsx)]
 
-    for label, factor in zip(trajlabels, WFtot):
-        trajfile = Trajdir + "/" + str(label) + "/order.txt"
-        data = extract(trajfile, xcol, ycol)
-        histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
+    h5file = histo_stuff.get("h5")
+    if h5file is not None and os.path.exists(h5file):
+        import h5py
+        with h5py.File(h5file, "r") as h5f:
+            for label, factor in zip(trajlabels, WFtot):
+                data = h5f[f"{label}/order.txt"]
+                if ycol is not None:
+                    data = data[1:-1,[xcol,ycol]].T
+                else:
+                    data = data[1:-1, xcol]
+                histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
+    else:
+        for label, factor in zip(trajlabels, WFtot):
+            trajfile = Trajdir + "/" + str(label) + "/order.txt"
+            data = extract(trajfile, xcol, ycol)
+            histogram = update_histogram(data, factor, histogram, Minx, Miny, dx, dy)
 
     # normalize such that the highest value equals 1
     max_value = np.max(histogram)
@@ -63,6 +75,6 @@ def calculate_free_energy(trajlabels, WFtot, Trajdir, outfolder, histo_stuff):
     if not yval is None:
         np.savetxt(os.path.join(outfolder, "histo_yval.txt"), yval)
     np.savetxt(os.path.join(outfolder, "histo_probability.txt"), histogram)
-    
+
     histogram = -np.log(histogram)  # get Landau free energy in kBT units
     np.savetxt(os.path.join(outfolder, "histo_free_energy.txt"), histogram)

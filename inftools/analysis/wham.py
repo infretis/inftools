@@ -23,6 +23,7 @@ def wham(
     maxy: Atd[float, Opt("-maxy", help="Same as -maxx but in y-direction")] = None,
     xcol: Atd[int, Opt("-xcol", help="What column in order.txt to use as x-value when calculating FE")] = 1,
     ycol: Atd[int, Opt("-ycol", help="Same as -xcol but for y-value")] = None,
+    h5: Atd[str, Opt("-h5", help="The h5 file if order.txt are stored in an h5 file. Requires the h5py package.")] = None,
     ):
     """Run Titus0 wham script."""
     import os
@@ -40,6 +41,7 @@ def wham(
         "histo_stuff":{
             "nbx":nbx, "minx":minx, "maxx":maxx, "xcol":xcol,
             "nby":nby, "miny":miny, "maxy":maxy, "ycol":ycol,
+            "h5": h5,
         }
     }
 
