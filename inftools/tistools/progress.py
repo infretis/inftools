@@ -23,10 +23,6 @@ def progress(
         print(f"{toml} does not exist!")
         return
 
-    if not os.path.exists(restart):
-        print(f"{restart} does not exist!")
-        return
-
     if not os.path.exists(sim):
         print(f"{sim} does not exist!")
         return
@@ -88,8 +84,14 @@ def progress(
         return Group(*renderables)
 
     config = read_toml(toml)
-    tsteps = config["simulation"]["steps"]
-    num_workers = config["runner"]["workers"]
+    if os.path.exists(restart):
+        configr = read_toml(restart)
+        num_workers = configr["runner"]["workers"]
+        tsteps = configr["simulation"]["steps"]
+    else:
+        num_workers = config["runner"]["workers"]
+        tsteps = configr["simulation"]["steps"]
+
 
     last_mtime = None
     cstep = 0
@@ -115,7 +117,6 @@ def progress(
                     try:
                         cstep = read_toml(restart)["current"]["cstep"]
                     except:
-                        print("boing")
                         pass
                     progress.update(task, completed=cstep)
             except FileNotFoundError:
