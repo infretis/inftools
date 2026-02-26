@@ -12,7 +12,7 @@ def calc_transmission(
     nskip: And[int,  Opt("-nskip", help="Skip initial order.txt files")] = 100,
     ):
     """Estimates the transimssion coefficient for a specific CV.
-    
+
     Defined as in Figure 8 in 10.1021/acs.jctc.5c01814
     """
     import numpy as np
@@ -47,7 +47,7 @@ def calc_transmission(
     pweights, preacts, pcrosses = [], [], []
     for pdata in data:
         pn, max_op, pweight = pdata
-        
+
         # get data from .h5 or txt..
         ppath_txt = os.path.join(traj, str(int(pn)), "order.txt")
         ppath_h5  = f"{int(pn)}/order.txt"
@@ -71,4 +71,8 @@ def calc_transmission(
 
     # transmission coefficient
     tcoeff = np.sum(pweights*preacts)/np.sum(pweights*pcrosses)
-    print("transmission coefficient:", tcoeff)
+    print("conditional transmission coefficient:", tcoeff)
+    print("To get the unconditional, see eq. 15")
+    print("https://arxiv.org/pdf/2602.05793")
+    print("https://github.com/infretis/inftools/pull/63")
+
