@@ -90,7 +90,7 @@ def progress(
         tsteps = configr["simulation"]["steps"]
     else:
         num_workers = config["runner"]["workers"]
-        tsteps = configr["simulation"]["steps"]
+        tsteps = config["simulation"]["steps"]
 
 
     last_mtime = None
