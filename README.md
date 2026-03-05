@@ -2,8 +2,12 @@
 👷‍♂️ Work in progress python package that provide various &infin;RETIS tools for tasks like setting up simulations and analyzing data. 📈
 
 🤝 Contributions of tools and modifications are welcome – feel free to submit your enhancements! 🚀
-## Installation 
-
+## Installation
+Inftools can be installed with:
+```
+pip install inftools
+```
+To install the latest development version:
 1. Clone the repository
 2. (Optional) Create a virtual environment
 3. Install with:
