@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "inftools"
 version = "2026.1"
-description = "Useful tools for AIRETIS simulations"
+description = "Useful tools for infRETIS simulations"
 authors = [
     "Daniel Zhang <daniel.t.zhang@ntnu.no>",
     "Lukas Baldauf <lukas.baldauf@ntnu.no>",
