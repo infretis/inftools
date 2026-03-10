@@ -10,7 +10,8 @@ def get_path_weights(
     nskip: Annotated[ int, typer.Option( "-nskip", help="Skip the first nskip entries of the infretis_data.txt file",), ] = 0,
     plotP: Annotated[ bool, typer.Option( "-plotP", help="If true plot the binless crossing probability"), ] = False,
     outP: Annotated[ str, typer.Option( "-outP", help="Write the binless WHAM crossing probability to outP"), ] = "",
-    overw: Annotated[ bool, typer.Option("-O", help="Force overwriting of files") ] = False,):
+    overw: Annotated[ bool, typer.Option("-O", help="Force overwriting of files") ] = False,
+    minus: Annotated[ bool, typer.Option("-minus", help="Add the minus path weigths") ] = False):
     """Calculate the unbiased weight for paths in the plus ensembles.
 
     The weights can be used to calculate observables as <O> = sum(wi*Oi), for
@@ -92,14 +93,18 @@ def get_path_weights(
     minus_op = data[minus_paths, 2:3].astype(float)
     minus_w = data[minus_paths, 3:4].astype(float)/denominator
 
-    combined_pnr = np.concatenate([D["pnr"], minus_pn])
-    combined_mop = np.concatenate([D["maxop"], minus_op])
-    combined_wei = np.concatenate([A, minus_w])
+    if minus:
+        combined_pnr = np.concatenate([D["pnr"], minus_pn])
+        combined_mop = np.concatenate([D["maxop"], minus_op])
+        combined_wei = np.concatenate([A, minus_w])
+        D["pnr"] = combined_pnr
+        D["maxop"] = combined_mop
+        A = combined_wei
 
     print(f"Weights saved to {out}.")
     np.savetxt(
         out,
-        np.c_[combined_pnr, combined_mop, combined_wei],
+        np.c_[D["pnr"], D["maxop"], A],
         header="path_nr\tmax_op\tweight",
         fmt=["%8d", "%9.5f", "%16.8e"],
     )
