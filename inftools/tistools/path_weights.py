@@ -40,6 +40,7 @@ def get_path_weights(
     data = data[nskip:]
     # we only need non-zero paths
     non_zero_paths = data[:, 3] == "----"
+    minus_paths = data[:, 3] != "----"
     data[data == "----"] = "0.0"
     D = {}
 
@@ -85,10 +86,20 @@ def get_path_weights(
         )
         A[j] = Q[K] * np.sum(w[j])
 
+    # add minus to weights
+    minus_pn = data[minus_paths, 0:1].astype(int)
+    denominator = np.sum(data[minus_paths, 3].astype(float))
+    minus_op = data[minus_paths, 2:3].astype(float)
+    minus_w = data[minus_paths, 3:4].astype(float)/denominator
+
+    combined_pnr = np.concatenate([D["pnr"], minus_pn])
+    combined_mop = np.concatenate([D["maxop"], minus_op])
+    combined_wei = np.concatenate([A, minus_w])
+
     print(f"Weights saved to {out}.")
     np.savetxt(
         out,
-        np.c_[D["pnr"], D["maxop"], A],
+        np.c_[combined_pnr, combined_mop, combined_wei],
         header="path_nr\tmax_op\tweight",
         fmt=["%8d", "%9.5f", "%16.8e"],
     )
