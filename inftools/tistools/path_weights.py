@@ -88,12 +88,11 @@ def get_path_weights(
         A[j] = Q[K] * np.sum(w[j])
 
     # add minus to weights
-    minus_pn = data[minus_paths, 0:1].astype(int)
-    denominator = np.sum(data[minus_paths, 3].astype(float))
-    minus_op = data[minus_paths, 2:3].astype(float)
-    minus_w = data[minus_paths, 3:4].astype(float)/denominator
-
     if minus:
+        minus_pn = data[minus_paths, 0:1].astype(int)
+        denominator = np.sum(data[minus_paths, 3].astype(float))
+        minus_op = data[minus_paths, 2:3].astype(float)
+        minus_w = data[minus_paths, 3:4].astype(float)/denominator
         D["pnr"] = np.concatenate([D["pnr"], minus_pn])
         D["maxop"] = np.concatenate([D["maxop"], minus_op])
         A = np.concatenate([A, minus_w])
