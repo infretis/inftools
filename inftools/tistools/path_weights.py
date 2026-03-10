@@ -94,12 +94,9 @@ def get_path_weights(
     minus_w = data[minus_paths, 3:4].astype(float)/denominator
 
     if minus:
-        combined_pnr = np.concatenate([D["pnr"], minus_pn])
-        combined_mop = np.concatenate([D["maxop"], minus_op])
-        combined_wei = np.concatenate([A, minus_w])
-        D["pnr"] = combined_pnr
-        D["maxop"] = combined_mop
-        A = combined_wei
+        D["pnr"] = np.concatenate([D["pnr"], minus_pn])
+        D["maxop"] = np.concatenate([D["maxop"], minus_op])
+        A = np.concatenate([A, minus_w])
 
     print(f"Weights saved to {out}.")
     np.savetxt(
