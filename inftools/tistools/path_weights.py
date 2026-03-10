@@ -41,7 +41,7 @@ def get_path_weights(
     data = data[nskip:]
     # we only need non-zero paths
     non_zero_paths = data[:, 3] == "----"
-    minus_paths = data[:, 3] != "----"
+    minus_paths = ~non_zero_paths
     data[data == "----"] = "0.0"
     D = {}
 
