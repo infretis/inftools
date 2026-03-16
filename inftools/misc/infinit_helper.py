@@ -60,7 +60,7 @@ def set_default_infinit(config):
     # check that interfaces are multiples of lamres
     # but skip for first iteration
     if cstep not in [-1,0]:
-        rounded_intf = np.round(np.round(interfaces/lamres)*lamres, decimals=10)
+        rounded_intf = np.round(np.floor(interfaces/lamres)*lamres, decimals=10)
         err_intf = np.where(rounded_intf != interfaces)[0]
         err_msg = (
             f"Interfaces {interfaces[err_intf]} are not multiples of "
@@ -221,7 +221,9 @@ def update_toml_interfaces(config):
     # avoid rounding errors in last ensembles causing maxop path to be non-valid
     if intf[-2] + lamres >= x[-1]:
         intf[-2] = x[-1] - lamres
-    intf_tmp = np.round(np.round(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
+    # always round new interfaces *down* so we  don't accidentally round the
+    # second-to-last interface above the highest maxop of the highest path
+    intf_tmp = np.round(np.floor(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
     # remove duplicates if any appear due to rounding of interfaces
     intf_tmp = list(np.unique(intf_tmp))
     # if we suddenly have less workers than interfaces, just return the
