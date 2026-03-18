@@ -1,5 +1,4 @@
 import shutil
-import subprocess
 
 import pathlib as pl
 
@@ -103,11 +102,12 @@ def write_toml(config, toml):
         tomli_w.dump(config, wfile)
 
 def run_infretis_ext(steps):
-    """Run infretis as a subprocess.
+    """Run infretis.
 
     Returns True if successful run, else False.
     """
     import numpy as np
+    import infretis.bin
     c0 = read_toml("infretis.toml")
     c1 = read_toml("restart.toml")
     if c1 and c0["infinit"]["cstep"] == c1["infinit"]["cstep"] and len(c0["simulation"]["interfaces"])==len(c1["simulation"]["interfaces"]) and np.allclose(c0["simulation"]["interfaces"],c1["simulation"]["interfaces"]):
@@ -116,12 +116,12 @@ def run_infretis_ext(steps):
         # might have updated steps_per_iter
         c1["infinit"]["steps_per_iter"] = c0["infinit"]["steps_per_iter"]
         write_toml(c1, "restart.toml")
-        subprocess.run("infretisrun -i restart.toml", shell = True)
+        infretis.bin.internalrun("restart.toml")
     else:
         print("Running with infretis.toml")
         c0["simulation"]["steps"] = steps
         write_toml(c0, "infretis.toml")
-        subprocess.run("infretisrun -i infretis.toml", shell = True)
+        infretis.bin.internalrun("infretis.toml")
     # check if successful run
     c1 = read_toml("restart.toml")
     if not c1:
