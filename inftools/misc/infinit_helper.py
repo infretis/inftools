@@ -101,13 +101,23 @@ def write_toml(config, toml):
     with open(toml, "wb") as wfile:
         tomli_w.dump(config, wfile)
 
+def infretisrun_internal(runfile):
+    import logging
+    import infretis.bin
+    infretis.bin.internalrun(runfile)
+    # needed to not run multiple times to same sim.log
+    # when using infretis.bin.internalrun
+    logger = logging.getLogger("main")
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
+
 def run_infretis_ext(steps):
     """Run infretis.
 
     Returns True if successful run, else False.
     """
     import numpy as np
-    import infretis.bin
     c0 = read_toml("infretis.toml")
     c1 = read_toml("restart.toml")
     if c1 and c0["infinit"]["cstep"] == c1["infinit"]["cstep"] and len(c0["simulation"]["interfaces"])==len(c1["simulation"]["interfaces"]) and np.allclose(c0["simulation"]["interfaces"],c1["simulation"]["interfaces"]):
@@ -116,12 +126,12 @@ def run_infretis_ext(steps):
         # might have updated steps_per_iter
         c1["infinit"]["steps_per_iter"] = c0["infinit"]["steps_per_iter"]
         write_toml(c1, "restart.toml")
-        infretis.bin.internalrun("restart.toml")
+        infretisrun_internal("restart.toml")
     else:
         print("Running with infretis.toml")
         c0["simulation"]["steps"] = steps
         write_toml(c0, "infretis.toml")
-        infretis.bin.internalrun("infretis.toml")
+        infretisrun_internal("infretis.toml")
     # check if successful run
     c1 = read_toml("restart.toml")
     if not c1:
