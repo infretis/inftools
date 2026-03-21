@@ -1,5 +1,4 @@
 import shutil
-import subprocess
 
 import pathlib as pl
 
@@ -60,7 +59,7 @@ def set_default_infinit(config):
     # check that interfaces are multiples of lamres
     # but skip for first iteration
     if cstep not in [-1,0]:
-        rounded_intf = np.round(np.floor(interfaces/lamres)*lamres, decimals=10)
+        rounded_intf = np.round(np.floor(np.round(interfaces/lamres,decimals=10))*lamres, decimals=10)
         err_intf = np.where(rounded_intf != interfaces)[0]
         err_msg = (
             f"Interfaces {interfaces[err_intf]} are not multiples of "
@@ -102,8 +101,19 @@ def write_toml(config, toml):
     with open(toml, "wb") as wfile:
         tomli_w.dump(config, wfile)
 
+def infretisrun_internal(runfile):
+    import logging
+    import infretis.bin
+    infretis.bin.internalrun(runfile)
+    # needed to not run multiple times to same sim.log
+    # when using infretis.bin.internalrun
+    logger = logging.getLogger("main")
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
+
 def run_infretis_ext(steps):
-    """Run infretis as a subprocess.
+    """Run infretis.
 
     Returns True if successful run, else False.
     """
@@ -116,12 +126,12 @@ def run_infretis_ext(steps):
         # might have updated steps_per_iter
         c1["infinit"]["steps_per_iter"] = c0["infinit"]["steps_per_iter"]
         write_toml(c1, "restart.toml")
-        subprocess.run("infretisrun -i restart.toml", shell = True)
+        infretisrun_internal("restart.toml")
     else:
         print("Running with infretis.toml")
         c0["simulation"]["steps"] = steps
         write_toml(c0, "infretis.toml")
-        subprocess.run("infretisrun -i infretis.toml", shell = True)
+        infretisrun_internal("infretis.toml")
     # check if successful run
     c1 = read_toml("restart.toml")
     if not c1:
@@ -223,7 +233,7 @@ def update_toml_interfaces(config):
         intf[-2] = x[-1] - lamres
     # always round new interfaces *down* so we  don't accidentally round the
     # second-to-last interface above the highest maxop of the highest path
-    intf_tmp = np.round(np.floor(np.array(intf[1:-1])/lamres)*lamres, decimals=10)
+    intf_tmp = np.round(np.floor(np.round(np.array(intf[1:-1])/lamres,decimals=10))*lamres, decimals=10)
     # remove duplicates if any appear due to rounding of interfaces
     intf_tmp = list(np.unique(intf_tmp))
     # if we suddenly have less workers than interfaces, just return the
