@@ -10,7 +10,8 @@ def get_path_weights(
     nskip: Annotated[ int, typer.Option( "-nskip", help="Skip the first nskip entries of the infretis_data.txt file",), ] = 0,
     plotP: Annotated[ bool, typer.Option( "-plotP", help="If true plot the binless crossing probability"), ] = False,
     outP: Annotated[ str, typer.Option( "-outP", help="Write the binless WHAM crossing probability to outP"), ] = "",
-    overw: Annotated[ bool, typer.Option("-O", help="Force overwriting of files") ] = False,):
+    overw: Annotated[ bool, typer.Option("-O", help="Force overwriting of files") ] = False,
+    minus: Annotated[ bool, typer.Option("-minus", help="Add the minus path weigths") ] = False):
     """Calculate the unbiased weight for paths in the plus ensembles.
 
     The weights can be used to calculate observables as <O> = sum(wi*Oi), for
@@ -40,6 +41,7 @@ def get_path_weights(
     data = data[nskip:]
     # we only need non-zero paths
     non_zero_paths = data[:, 3] == "----"
+    minus_paths = ~non_zero_paths
     data[data == "----"] = "0.0"
     D = {}
 
@@ -84,6 +86,16 @@ def get_path_weights(
             np.where(D["maxop"][j] >= interfaces)[0][-1], len(interfaces) - 2
         )
         A[j] = Q[K] * np.sum(w[j])
+
+    # add minus to weights
+    if minus:
+        minus_pn = data[minus_paths, 0:1].astype(int)
+        denominator = np.sum(data[minus_paths, 3].astype(float))
+        minus_op = data[minus_paths, 2:3].astype(float)
+        minus_w = data[minus_paths, 3:4].astype(float)/denominator
+        D["pnr"] = np.concatenate([D["pnr"], minus_pn])
+        D["maxop"] = np.concatenate([D["maxop"], minus_op])
+        A = np.concatenate([A, minus_w])
 
     print(f"Weights saved to {out}.")
     np.savetxt(
