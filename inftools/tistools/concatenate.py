@@ -44,6 +44,8 @@ def trjcat(
         from MDAnalysis import transformations as trans
     elif engine == "ase":
         from ase.io.trajectory import Trajectory
+        if topology:
+            import MDAnalysis as mda
 
     traj = pathlib.Path(traj)
     out = pathlib.Path(out)
@@ -55,6 +57,13 @@ def trjcat(
         topology = pathlib.Path(topology)
         if not topology.exists():
             raise FileNotFoundError(f"No such file {topology}")
+
+    if engine == "ase" and out.suffix != ".traj" and not topology:
+        raise ValueError("Supply a topology to write MDA supported formats")
+
+    if engine == "ase" and selection != "all" and not topology:
+        raise ValueError("Supply a topology to write specific atom selections")
+
 
     traj_dir = traj.parents[0]
     traj_file_arr, index_arr = np.loadtxt(
@@ -91,28 +100,38 @@ def trjcat(
                 u.trajectory.add_transformations(*workflow)
             n_atoms = u.select_atoms(selection).n_atoms
         elif engine == "ase":
-            if selection != "all":
-                raise NotImplementedError(
-                    "Only selection all is implemented for ase egnine."
-                )
+            # create mda Universe to write ASE trajectory in MDA suppported formats
             U[traj_file] = Trajectory(str(traj_fpath))
-            n_atoms = U[traj_file][0].positions.shape[0]
+            if topology is not None:
+                mda_universe = mda.Universe(topology)
+                n_atoms = mda_universe.select_atoms(selection)
+            else:
+                n_atoms = U[traj_file][0].positions.shape[0]
 
     # write the concatenated trajectory
     if engine == "mda":
         with mda.Writer(str(out), n_atoms) as wfile:
-            for traj_file, index in zip(traj_file_arr, index_arr):
+            import tqdm
+            for traj_file, index in tqdm.tqdm(zip(traj_file_arr, index_arr)):
                 u = U[traj_file]
                 ag = u.select_atoms(selection)
                 u.trajectory[index]
                 wfile.write(ag.atoms)
 
-    elif engine == "ase":
+    elif engine == "ase" and not topology:
         out = Trajectory(str(out), "w")
         for traj_file, index in zip(traj_file_arr, index_arr):
             # traj object
             u = U[traj_file]
             atoms = u[index]
             out.write(atoms)
+    else:
+        with mda.Writer(str(out), n_atoms) as wfile:
+            for traj_file, index in zip(traj_file_arr, index_arr):
+                u = U[traj_file]
+                atoms = u[index]
+                mda_universe.atoms.positions = atoms.positions
+                ag = mda_universe.select_atoms(selection)
+                wfile.write(ag.atoms)
 
     print("\nAll done!")
