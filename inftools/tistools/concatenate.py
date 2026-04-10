@@ -42,10 +42,12 @@ def trjcat(
     if engine == "mda":
         import MDAnalysis as mda
         from MDAnalysis import transformations as trans
+        import tqdm
     elif engine == "ase":
         from ase.io.trajectory import Trajectory
         if topology:
             import MDAnalysis as mda
+            import tqdm
 
     traj = pathlib.Path(traj)
     out = pathlib.Path(out)
@@ -111,7 +113,6 @@ def trjcat(
     # write the concatenated trajectory
     if engine == "mda":
         with mda.Writer(str(out), n_atoms) as wfile:
-            import tqdm
             for traj_file, index in tqdm.tqdm(zip(traj_file_arr, index_arr)):
                 u = U[traj_file]
                 ag = u.select_atoms(selection)
@@ -127,7 +128,7 @@ def trjcat(
             out.write(atoms)
     else:
         with mda.Writer(str(out), n_atoms) as wfile:
-            for traj_file, index in zip(traj_file_arr, index_arr):
+            for traj_file, index in tqdm.tqdm(zip(traj_file_arr, index_arr)):
                 u = U[traj_file]
                 atoms = u[index]
                 mda_universe.atoms.positions = atoms.positions
