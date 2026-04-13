@@ -23,8 +23,11 @@ def calc_flow2(
     n_ensembles = len(config["simulation"]["interfaces"])
     flow_map = {i: {"path": [i], "ens": [i], "step": [0], "cmd": ["init"]} for i in range(n_ensembles)}
     # for inf-init, the load paths can be e.g. load/81, load/82, load/83, ..., etc
-    traj_num = config["current"].get("traj_num",0)
-    offset = traj_num - n_ensembles if traj_num else 0
+    if "current" in config.keys():
+        traj_num = config["current"].get("traj_num", 0)
+        offset = traj_num - n_ensembles
+    else:
+        offset = 0
 
     rep_hist = {i+offset: i for i in range(n_ensembles)} # path : replica
 
