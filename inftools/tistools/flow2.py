@@ -22,7 +22,14 @@ def calc_flow2(
         config = tomli.load(toml_file)
     n_ensembles = len(config["simulation"]["interfaces"])
     flow_map = {i: {"path": [i], "ens": [i], "step": [0], "cmd": ["init"]} for i in range(n_ensembles)}
-    rep_hist = {i: i for i in range(n_ensembles)} # path : replica
+    # for inf-init, the load paths can be e.g. load/81, load/82, load/83, ..., etc
+    if "current" in config.keys():
+        traj_num = config["current"].get("traj_num", 0)
+        offset = traj_num - n_ensembles
+    else:
+        offset = 0
+
+    rep_hist = {i+offset: i for i in range(n_ensembles)} # path : replica
 
     step = 0
     with open(log, "r") as rfile:
