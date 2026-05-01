@@ -1,15 +1,13 @@
 def assign_code(log):
-    import numpy as np
     paths = {}
     codes = {}
-    replicas = []
     inits = []
     inits0 = []
     init_b = False
     shootings = []
     shooting = 0
 
-    with open(log, "r") as read:
+    with open(log) as read:
         for line in read:
             rip = line.rstrip().split()
             if "stored" in line:
@@ -39,7 +37,6 @@ def assign_code(log):
 
 
 def add_move(replica, ens_arr, old, new, ens_num):
-    import numpy as np
     replica_new = []
     ens_new = []
 
@@ -56,18 +53,16 @@ def add_move(replica, ens_arr, old, new, ens_num):
 
 
 def read_log(log, pn):
-    import numpy as np
     # what we want:
     # p0 -> p10 -> p16 -> p20 -> p23 -> p31 -> p34 -> p50
     # e0 ->  e1 ->  e0 ->  e1 ->  e1 ->  e0 ->  e0 ->  e1
 
     paths, codes, inits, shootings = assign_code(log)
-    connections = []
 
     istep = -1
     replicas = []
     ensembles = []
-    with open(log, "r") as read:
+    with open(log) as read:
         for line in read:
             rip = line.rstrip().split()
             if "stored" in line:
@@ -103,7 +98,6 @@ def read_log(log, pn):
     follow_pn = []
     follow_en = []
     follow_size = []
-    pn0 = pn
     code = paths[pn]
     for idx, replica, ensemble in zip(range(len(replicas))[::-1], replicas[::-1], ensembles[::-1]):
         for rep, ens in zip(replica, ensemble):

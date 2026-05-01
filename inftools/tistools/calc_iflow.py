@@ -1,4 +1,5 @@
 from typing import Annotated
+
 import typer
 
 # Disable automatic underscore -> hyphen in CLI names
@@ -13,8 +14,6 @@ def calc_iflow(
 
     Returns a flow_map dictionary.
     """
-    import numpy as np
-    import tomli
     import matplotlib.pyplot as plt
 
     from inftools.misc.misc import read_log
@@ -22,11 +21,11 @@ def calc_iflow(
 
 
     for idx0, rep in enumerate([int(i) for i in plot.split(" ")]):
-    
+
         ens, pns, follow_size, shootings = read_log("sim.log", rep)
         print("ens:", " ".join(ens))
         print("pns:", " ".join(pns))
-    
+
         plt.plot(shootings, [int(i) for i in ens], color=COLS[idx0])
         plt.scatter(shootings, [int(i) for i in ens], color=COLS[idx0])
         if idx0 == 0:
@@ -35,8 +34,8 @@ def calc_iflow(
                 plt.plot([acc*idx, acc*(idx+1)], [fs[0]-1]*2, color="k")
             # acc += fs[1]
             # acc += 50
-    
-    
+
+
     plt.xlabel("MC Moves")
     plt.ylabel("Ensemble")
     plt.ylim([0, None])
