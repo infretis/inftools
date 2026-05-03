@@ -66,6 +66,9 @@ def read_log(log, pn):
         for line in read:
             rip = line.rstrip().split()
             if "stored" in line:
+                if istep >= len(inits) - 1:
+                    # break to avoid index error if last sim.log line is 'stored'
+                    break
                 if istep > -1:
                     replicas.append(replicas0)
                     ensembles.append(ens0)
