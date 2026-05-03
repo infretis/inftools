@@ -16,7 +16,7 @@ def assign_code(log):
             if "shooted" in line:
                 shooting += 1
 
-            if "|" in line and rip[-4] == "|":
+            if "|" in line and rip[-4] == "|" and rip[2] == "|" and len(rip)>6:
                 pn = int(rip[1][1:])
                 if init_b:
                     inits0.append(pn)
