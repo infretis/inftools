@@ -31,8 +31,12 @@ def generate_zero_paths(
     config0 = read_toml(toml)
 
     # make a directory we work from
-    tmp_dir = pl.Path("temporary_load/")
-    tmp_dir.mkdir(exist_ok = False)
+    if config0["engine"]["class"] == "ase_external":
+        tmp_dir = pl.Path("worker0")
+        tmp_dir.mkdir(exist_ok = True)
+    else:
+        tmp_dir = pl.Path("worker0")
+        tmp_dir.mkdir(exist_ok = False)
     load_dir = pl.Path(config0["simulation"].get("load_dir", "load"))
     load_dir.mkdir(exist_ok = False)
 
@@ -55,13 +59,15 @@ def generate_zero_paths(
     engine_key = list(state.engines.keys())[0]
     engine = state.engines[engine_key][0]
     engine.exe_dir = str(tmp_dir.resolve())
+    wmdrun = False
     if "dask" in config.keys():
         wmdrun = config["dask"]["wmdrun"][0]
-    else:
+    elif "wmdrun" in config["runner"].keys():
         wmdrun = config["runner"]["wmdrun"][0]
-    engine.set_mdrun(
-        {"wmdrun": wmdrun, "exe_dir": engine.exe_dir}
-    )
+    if wmdrun:
+        engine.set_mdrun(
+            {"wmdrun": wmdrun, "exe_dir": engine.exe_dir}
+        )
     system0.set_pos((os.path.abspath(initial_configuration), 0))
     system0.order = engine.calculate_order(system0)
     engine.rgen = np.random.default_rng()

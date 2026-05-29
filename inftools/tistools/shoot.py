@@ -107,7 +107,7 @@ def shoot(
             start_cond = ("R")
     elif order[0] >= intf[0]:
         ens_intf = (intf[0],intf[0],intf[-1])
-        start_cond = ("L")
+        start_cond = ("L","R")
     else:
         exit(f"[ERROR] order value >= interface[-1] ({intf[-1]})!"
         " Not sure what you want to do here.")
@@ -121,7 +121,9 @@ def shoot(
             "rgen": engine.rgen,
             }
     success, out_path, status = shoot(ens_set, path, engine, shooting_point, start_cond)
+    out_path.status = "ACC"
     out_path.path_number = 0
     pstore = PathStorage()
     pstore.keep_traj_fnames = config.get("output",{}).get("keep_traj_fnames",[])
-    pstore.output(0, {"path": out_path, "dir": wdir})
+    pstore.output(0, {"path": out_path, "dir": wdir, "status": "ACC"})
+    return out_path
