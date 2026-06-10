@@ -119,6 +119,7 @@ def run_analysis(inp_dic):
             # This can occur if 1 ensemble does does not have paths.
             # set AvinvwHA = 1.0 to avoid div by zero as it will be 0 divided by 1 anyways
             AvinvwHA = 1.0
+            print(f"[ WARNING ] Ensemble {y+1} does not contain any paths!")
         else:
             AvinvwHA = sumPxy_afterw[y] / sumPxy[y]
         y1 = i0min + y  # index of [0-], [0+], [1+] etc
