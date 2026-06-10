@@ -70,6 +70,10 @@ def run_analysis(inp_dic):
     # delete the first nskip entries
     del matrix[:nskip]
 
+    if len(matrix) == 0:
+        print("No paths in the data file! Or nskip too high!")
+        exit()
+
     ##check matrix
     # from checkm import *
     # check_matrix(matrix,nintf)
