@@ -70,6 +70,10 @@ def run_analysis(inp_dic):
     # delete the first nskip entries
     del matrix[:nskip]
 
+    if len(matrix) == 0:
+        print("No paths in the data file! Or nskip too high!")
+        exit()
+
     ##check matrix
     # from checkm import *
     # check_matrix(matrix,nintf)
@@ -111,7 +115,13 @@ def run_analysis(inp_dic):
     # For instance if [0+] is based on shooting and [i+] is based on WF
     # This allows to use the standard WHAM procedure
     for y in range(nintf):
-        AvinvwHA = sumPxy_afterw[y] / sumPxy[y]
+        if sumPxy[y] == 0:
+            # This can occur if 1 ensemble does does not have paths.
+            # set AvinvwHA = 1.0 to avoid div by zero as it will be 0 divided by 1 anyways
+            AvinvwHA = 1.0
+            print(f"[ WARNING ] Ensemble {y} does not contain any paths!")
+        else:
+            AvinvwHA = sumPxy_afterw[y] / sumPxy[y]
         y1 = i0min + y  # index of [0-], [0+], [1+] etc
         for x in matrix:
             x[y1] /= AvinvwHA
@@ -253,7 +263,9 @@ def run_analysis(inp_dic):
         Ptot_wham,
     )
     for i in range(nplus_ens):
-        p_loc[i] = [val / eta[i] for val in p_loc[i]]
+        # if else to avoid zero div in case we have ensembles with 0 paths,
+        # causing eta[i] to same value as original, zero
+        p_loc[i] = [val / eta[i] if eta[i] != 0.0 else 0.0 for val in p_loc[i]]
 
     # we need now a loop ovber all alpha values and determine K(alpha)
     # It is however faster to loop over K(alpha) indexes and split the
