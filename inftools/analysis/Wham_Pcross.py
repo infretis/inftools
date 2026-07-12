@@ -747,7 +747,7 @@ def run_analysis(inp_dic):
         # Write the values
         for j in range(len(distrmatrix)):
             file.write(str(j))
-            for i in range(nplus_ens):
+            for i in range(nintf):
                 yval = distrmatrix[j][i]
                 file.write(f"\t{yval}")
             file.write("\n")
