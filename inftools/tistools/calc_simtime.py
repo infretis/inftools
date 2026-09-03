@@ -16,7 +16,7 @@ def calc_simtime(
     from datetime import datetime
     format_str = "%Y.%m.%d %H:%M:%S"
 
-    paths = []
+    mcmoves = []
     pstarts = []
     tstarts = []
     # previous, current time
@@ -27,23 +27,22 @@ def calc_simtime(
             if "submit worker 0 START" in line:
                 ptime = datetime.strptime(line[-20:-1], format_str)
                 ctime = None
-                pstarts.append(len(paths))
-                tstarts.append(np.sum(paths)/3600/24)
-            if "shooting" in line:
-                line = read.readline()
-                if "date" in line:
-                    if ctime is not None:
-                        ptime = ctime
-                    rip = " ".join(line.rstrip().split()[2:])
-                    ctime = datetime.strptime(rip, format_str)
-                    paths.append((ctime-ptime).total_seconds())
-
-    # tstarts = [np.sum(paths[:i])/3600/24 for i in pstarts]
+                pstarts.append(len(mcmoves))
+                tstarts.append(np.sum(mcmoves)/3600/24)
+            if "[INFO]: date:" in line:
+                rip = " ".join(line.rstrip().split()[2:])
+                ctime = datetime.strptime(rip, format_str)
+                end = read.readline()
+                if "END" not in end:
+                    continue
+                if ptime is not None:
+                    delta = (ctime - ptime).total_seconds()
+                    mcmoves.append(delta)
+                ptime = ctime
 
     if plot:
-        # plt.plot(np.arange(len(paths)), np.cumsum(paths)/3600/24)
-        plt.plot(np.cumsum(paths)/3600/24, np.arange(len(paths)))
-        np.savetxt("simtime.txt", np.array([np.cumsum(paths)/3600/24, np.arange(len(paths))]).T)
+        plt.plot(np.cumsum(mcmoves)/3600/24, np.arange(len(mcmoves)))
+        np.savetxt("simtime.txt", np.array([np.cumsum(mcmoves)/3600/24, np.arange(len(mcmoves))]).T)
         for pstart, tstart in zip(pstarts, tstarts):
             # plt.axvline(np.sum(paths[:start]))
             plt.axvline(tstart, color="k", ls="--")
@@ -52,8 +51,9 @@ def calc_simtime(
         plt.xlabel("Time [Days]")
         plt.show()
 
-    print(f"Total Wall Time: {np.sum(paths)/3600/24:.01f} Days")
+    print(f"Total Wall Time: {np.sum(mcmoves)/3600/24:.02f} Days")
+    print(f"Total Wall Time: {np.sum(mcmoves)/3600:.02f} Hours")
     print(f"Total Restarts: {len(tstarts)-1}")
-    print(f"Total Sampled Paths: {len(paths)}")
+    print(f"Total MC Moves: {len(mcmoves)}")
 
-    return np.sum(paths)/3600/24, len(tstarts)-1
+    return np.sum(mcmoves)/3600/24, len(tstarts)-1
