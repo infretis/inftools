@@ -37,6 +37,23 @@ def set_default_infinit(config):
     err_msg = "'nskip' in [infinit] is replaced with 'skip', which is a fraction"
     assert "nskip" not in config["infinit"].keys(), err_msg
 
+    # Check if we use multi-resolition wire-fencing.
+    # For now, we either use 'wf' in all ensembles or 'mwf' in all ensembles
+    # based on wether the keywords 'mwf_nsubpath' and 'mwf_subcycle_small' are
+    # specified.
+    mwf_subcycle_small = config["simulation"]["tis_set"].get("mwf_subcycle_small", None)
+    mwf_nsubpath = config["simulation"]["tis_set"].get("mwf_nsubpath", None)
+    # both mwf keywords specified
+    if (mwf_nsubpath != None and mwf_subcycle_small != None):
+        config["infinit"]["use_mwf"] = True
+    # no keyworkds specified
+    elif (mwf_nsubpath == None and mwf_subcycle_small == None):
+        config["infinit"]["use_mwf"] = False
+    else:
+        raise ValueError("To use multi-resolution wire-fencing, both"
+                         " 'mwf_nsubpath' and 'mwf_subcycle_small' need to be"
+                         " specified.")
+
     skip = config["infinit"].get("skip", 0.1)
     assert 0 <= skip < 1, "'skip' should be a fraction between 0 and 1!"
     config["infinit"]["skip"] = skip
@@ -265,7 +282,8 @@ def update_toml_interfaces(config):
             intf_tmp.pop(idx)
 
     config["simulation"]["interfaces"] =intf[:1] +  intf_tmp + intf[-1:]
-    config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
+    wf_move = "mwf" if  config["infinit"]["use_mwf"] else "wf"
+    config["simulation"]["shooting_moves"] = sh_moves = ["sh", "sh"] + [wf_move for i in range(len(intf)-2)]
 
 def update_toml(config):
     config0 = read_toml("infretis.toml")
