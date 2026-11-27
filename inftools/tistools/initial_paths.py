@@ -217,7 +217,8 @@ def infinit(
         lamres0 = d_lambda/nworkers
         # new interfaces to use for first infretis sim
         intf = [intf[0]] + [intf[0] + lamres0*(i+1) for i in range(nworkers-1)] + [intf[1]]
-        sh_moves = ["sh", "sh"] + ["wf" for i in range(len(intf)-2)]
+        wf_move = "mwf" if iset["use_mwf"] else "wf"
+        sh_moves = ["sh", "sh"] + [wf_move for i in range(len(intf)-2)]
 
         # create symlink to load/1 path Nworker-1 times
         load_dir = pl.Path(config["simulation"].get("load_dir", "load"))

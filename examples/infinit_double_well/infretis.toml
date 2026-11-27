@@ -3,7 +3,7 @@
 pL = 0.3 # minimum local corssing probaiblity between interfaces
 initial_conf = "initial.xyz" # initial conf to start from, can be high up the barrier from metadyn
 lamres = 0.001 # lamres for calcualting Pcross
-nskip = 10 # skip 10 first paths when calculating Pcross
+skip = 0.1 # skip 10% of first paths when calculating Pcross
 steps_per_iter = [30,110,210] # infretis steps per iteration
 cstep = -1 # -1 means we don't have [0-] and [0+] paths
 
